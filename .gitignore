@@ -7,3 +7,18 @@ backend/app/frontend/
 /blob-report/
 /playwright/.cache/
 /logs/
+# Environment
+/.env
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Frontend build
+frontend/dist/

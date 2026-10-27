@@ -32,9 +32,10 @@ compose.yml           本地与部署的容器编排
    docker compose up -d db mailpit
    ```
 
-2. 启动后端（首次需同步依赖并初始化数据库）：
+2. 准备配置并启动后端（首次需同步依赖并初始化数据库）：
 
    ```bash
+   cp .env.example .env
    cd backend
    uv sync
    uv run alembic upgrade head
@@ -59,7 +60,7 @@ compose.yml           本地与部署的容器编排
 
 ## 配置说明
 
-本地配置位于 `.env`（后端）与 `frontend/.env`（前端）。生产部署前请修改 `SECRET_KEY`、`POSTGRES_PASSWORD`、`FIRST_SUPERUSER_PASSWORD` 等默认值。
+本地配置位于 `.env`（后端）与 `frontend/.env`（前端）。`.env` 不入库，首次运行请从示例复制：`cp .env.example .env`。生产部署前请务必替换 `SECRET_KEY`、`POSTGRES_PASSWORD`、`FIRST_SUPERUSER_PASSWORD` 等 `changethis` 占位值。
 
 ## 仓库
 
