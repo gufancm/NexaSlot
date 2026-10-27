@@ -1,88 +1,66 @@
-# Full Stack FastAPI Template
+# NexaSlot — 智能资源预约与调度平台
 
-[![Test Docker Compose](../../actions/workflows/test-docker-compose.yml/badge.svg)](../../actions/workflows/test-docker-compose.yml)
-[![Test Backend](../../actions/workflows/test-backend.yml/badge.svg)](../../actions/workflows/test-backend.yml)
+NexaSlot 是一个面向**资源预约与调度**的全栈平台。当前为第一版基础骨架：包含账号体系、权限管理与基础数据管理能力，后续将逐步扩展预约、排期、资源调度等核心业务。
 
-## Technology Stack and Features
+## 技术栈
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-  - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-  - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-  - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-  - 🧩 Built into the backend application and served by FastAPI on the same domain as the API.
-  - 💃 Using TypeScript, hooks, [Vite](https://vitejs.dev), and other parts of a modern frontend stack.
-  - 🎨 [Tailwind CSS](https://tailwindcss.com) and [shadcn/ui](https://ui.shadcn.com) for the frontend components.
-  - 🤖 An automatically generated frontend client.
-  - 🧪 [Playwright](https://playwright.dev) for end-to-end testing.
-  - 🦇 Dark mode support.
-- ☁️ [FastAPI Cloud](https://fastapicloud.com) for deployment.
-- 🐋 [Docker Compose](https://www.docker.com) for local services and self-hosted deployment.
-  - 📞 [Traefik](https://traefik.io) as a reverse proxy with automatic HTTPS.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email-based password recovery.
-- ✉️ [React Email](https://react.email) for email templates.
-- 📬 [Mailpit](https://mailpit.axllent.org) for local email testing during development.
-- ✅ Tests with [Pytest](https://pytest.org).
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+| 层级 | 选型 |
+| --- | --- |
+| 后端 | Python 3.14、FastAPI、SQLModel、PostgreSQL、Alembic |
+| 前端 | React 19、TypeScript、Vite、Tailwind CSS、shadcn/ui |
+| 数据请求 | TanStack Query + 自动生成的 OpenAPI 客户端 |
+| 鉴权 | JWT（OAuth2 密码模式） |
+| 测试 | Pytest（后端）、Playwright（前端端到端） |
+| 本地依赖 | Docker Compose（PostgreSQL + Mailpit） |
 
-### Dashboard Login
+## 目录结构
 
-![Dashboard login screenshot](img/login.png)
+```text
+backend/              后端应用、Alembic 迁移与测试
+frontend/             前端应用（构建产物输出到 backend/app/frontend）
+packages/react-email/ 邮件模板源码
+compose.yml           本地与部署的容器编排
+```
 
-### Dashboard - Admin
+## 本地运行
 
-![Admin dashboard screenshot](img/dashboard.png)
+前置：已安装 `uv`、`bun` 与 Docker。
 
-### Dashboard - Items
+1. 启动依赖服务（PostgreSQL 映射到宿主机 5433，Mailpit 为 1025/8025）：
 
-![Items dashboard screenshot](img/dashboard-items.png)
+   ```bash
+   docker compose up -d db mailpit
+   ```
 
-### Dashboard - Dark Mode
+2. 启动后端（首次需同步依赖并初始化数据库）：
 
-![Dark mode dashboard screenshot](img/dashboard-dark.png)
+   ```bash
+   cd backend
+   uv sync
+   uv run alembic upgrade head
+   uv run python app/initial_data.py
+   uv run fastapi dev --port 8001
+   ```
 
-### React Email Templates
+3. 启动前端（另开一个终端）：
 
-![Email templates screenshot](img/react-email.png)
+   ```bash
+   bun install
+   bun run dev
+   ```
 
-### Mailpit - Local Email Testing
+| 入口 | 地址 |
+| --- | --- |
+| 前端 | http://localhost:5173 |
+| API 文档 | http://localhost:8001/docs |
+| 邮件测试（Mailpit） | http://localhost:8025 |
 
-![Mailpit screenshot](img/mailpit.png)
+默认管理员账号见 `.env`：`admin@example.com` / `changethis`（首次部署请务必修改）。
 
-### Interactive API Documentation
+## 配置说明
 
-![API docs](img/docs.png)
+本地配置位于 `.env`（后端）与 `frontend/.env`（前端）。生产部署前请修改 `SECRET_KEY`、`POSTGRES_PASSWORD`、`FIRST_SUPERUSER_PASSWORD` 等默认值。
 
-## How to Use It
+## 仓库
 
-Click the **Use this template** button at the top of this page to create a new repository.
-
-## Backend Development
-
-Backend docs: [backend/README.md](./backend/README.md).
-
-## Frontend Development
-
-Frontend docs: [frontend/README.md](./frontend/README.md).
-
-## Deployment
-
-FastAPI Cloud deployment: [deployment.md](./deployment.md).
-
-Self-hosted deployment with Docker Compose: [deployment-docker-compose.md](./deployment-docker-compose.md).
-
-## Development
-
-General development docs: [development.md](./development.md).
-
-This includes the local FastAPI and Vite workflow, Docker Compose services, `.env` configuration, and more.
-
-## Release Notes
-
-Check the file [release-notes.md](./release-notes.md).
-
-## License
-
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+<https://github.com/gufancm/NexaSlot>
