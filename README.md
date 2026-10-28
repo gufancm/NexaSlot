@@ -12,6 +12,10 @@ NexaSlot 是一个面向会议室、场地等**独占型资源**的预约与调�
 | --- | --- |
 | ![资源详情](docs/screenshots/resource-detail.png) | ![我的预约](docs/screenshots/reservations.png) |
 
+| 智能预约推荐 | 确认后真实订单 |
+| --- | --- |
+| ![智能预约](docs/v3-lite/screenshots/smart-booking.png) | ![确认成功](docs/v3-lite/screenshots/smart-booking-confirmed.png) |
+
 ## V1 已实现
 
 - **账号与鉴权**：注册、登录、JWT、个人资料、密码修改/找回（复用模板能力）。
@@ -38,6 +42,17 @@ NexaSlot 是一个面向会议室、场地等**独占型资源**的预约与调�
 
 实测结果（同一台机器、10 用户、20 资源、20 秒可用性读负载）：缓存命中率 **96.94%**，P95 **22ms vs 40ms**，MySQL `Com_select` **-39.7%**。详见 [V2 性能报告](docs/v2/performance/report.md)；架构、迁移与测试见 [V2 文档](docs/v2/README.md)。
 
+## V3 Lite 已实现
+
+- **自然语言预约助手**：从一句话提取日期、时间窗口、时长、人数、设备与楼层偏好；缺失关键条件时返回澄清项，不猜测执行。
+- **真实资源推荐**：复用 V2 `match_resources`，在时间窗口内按 30 分钟编排精确查询，返回数据库中的真实空闲资源与时段，不伪造余量或设备。
+- **受控 AI 边界**：LLM 只做无副作用的结构化提取，禁止输出租户/资源 ID、订单号或“预约成功”；设备为硬约束，楼层在无数据时只记录假设。
+- **用户确认后下单**：前端展示推荐卡片，用户明确点击“确认预约”后才调用原 `POST /api/v1/reservations`，继承 `Idempotency-Key`、事务与 409 冲突处理。
+- **可靠降级**：Mock / OpenAI-compatible 切换、超时与有限重试、AI 独立 Redis 限流；AI 关闭或不可用时手动预约不受影响。
+- **可复现评测**：40 条冻结中文解析样例、64 个 V3 后端测试、6 项 Playwright E2E。Mock 基线关键字段 100%，仅代表确定性契约基线，不代表真实 LLM 准确率。
+
+V3 架构、信任边界、评测方法与演示步骤见 [V3 文档](docs/v3-lite/README.md)。
+
 ## 技术栈
 
 | 层级 | 选型 |
@@ -45,6 +60,7 @@ NexaSlot 是一个面向会议室、场地等**独占型资源**的预约与调�
 | 后端 | Python 3.14、FastAPI、SQLModel、Alembic |
 | 数据库 | MySQL 8.4（`utf8mb4`，UTC 存储） |
 | 缓存/中间件 | Redis 7.4（Cache-Aside、Lua 限流、single-flight；不作为预约权威数据） |
+| AI | OpenAI-compatible Chat Completions（可切换 Mock；仅做结构化意图提取） |
 | 前端 | React 19、TypeScript、Vite、TanStack Router / Query、Tailwind CSS、shadcn/ui |
 | 鉴权 | JWT（OAuth2 密码模式） |
 | 测试 | Pytest、Playwright |
@@ -178,6 +194,12 @@ V2 新增接口：
 | `GET` | `/api/v1/operations/metrics` | 运营指标 |
 | `GET/POST` | `/api/v1/operations/outbox...` | 失败事件与重试 |
 
+V3 新增接口：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/v1/ai/recommend` | 自然语言解析 + 真实资源推荐（不创建订单） |
+
 错误响应统一为 `{"detail": {"code": "...", "message": "..."}}`，常用错误码：`RESOURCE_NOT_FOUND`、`RESOURCE_INACTIVE`、`SLOT_UNAVAILABLE`、`BOOKING_RULE_VIOLATION`、`IDEMPOTENCY_CONFLICT`、`IDEMPOTENCY_KEY_REQUIRED`、`FORBIDDEN`。
 
 ## 测试
@@ -189,7 +211,15 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-当前共 **74 个后端测试**（V1 61 + V2 13）。测试连接 `.env` 中配置的 MySQL，`conftest.py` 会自动创建超级管理员；请勿把测试指向生产库。
+当前共 **138 个后端测试**（V1 61 + V2 13 + V3 64）。测试连接 `.env` 中配置的 MySQL，`conftest.py` 会自动创建超级管理员；请勿把测试指向生产库。运行候补/Outbox 测试时建议临时停止 Worker，避免后台进程与测试同时消费事件。
+
+V3 前端 E2E（使用本机 Chrome）：
+
+```powershell
+cd frontend
+$env:PLAYWRIGHT_CHANNEL='chrome'
+bunx playwright test tests/v3-ai-booking.spec.ts --reporter=line
+```
 
 前端类型检查与构建：
 
@@ -207,6 +237,7 @@ CI 配置见 `.github/workflows/test-backend.yml`：启动 MySQL/Redis 容器 �
 backend/
   app/
     api/routes/       组织、场地、资源、预约、候补、匹配、通知、运维路由
+    ai/               自然语言解析、LLM 客户端、推荐编排与设备别名
     cache/            Cache-Aside、资源版本化失效
     core/             配置、数据库、Redis、时间、错误码
     services/         租户鉴权、时间片、预约、候补、分配、Outbox、匹配
@@ -219,18 +250,21 @@ backend/
   tests/              后端测试
 frontend/
   src/routes/         资源中心、资源详情、预约、候补、匹配、通知、看板、管理后台
-  src/components/     资源卡片、组织切换、通知铃铛、后台表格等
+  src/components/     资源卡片、智能预约弹窗、组织切换、通知铃铛、后台表格等
   src/client/         OpenAPI 自动生成客户端
 compose.yml           MySQL / Redis / 后端 / 代理编排
 ```
 
-## V2 边界与后续
+## V3 Lite 边界与后续
 
 - 候补 FIFO 仅承诺同一资源 + 完全相同时间段；跨时段、跨资源全局排队属后续版本。
 - Outbox 为至少一次语义，通知通过唯一键幂等；不承诺外部通知恰好一次。
 - Redis 故障时缓存回源、限流默认降级放行，MySQL 事务仍是订单唯一权威。
 - 通知中心使用轮询，未实现 SSE 推送。
-- LangGraph、LLM 自然语言预约、AI 运营问答、支付与动态定价属于 V3；本版本不包含。
+- AI 仅支持会议室与单轮需求，不做多轮长期记忆、RAG、Agent 或自主执行；所有下单仍走 V1/V2 事务。
+- 当前资源模型没有楼层字段，楼层偏好不会硬性筛选；多时区组织需先选择场地。
+- Mock 结果不代表真实模型准确率；真实模型需单独配置 Key 并运行 `scripts/evaluate_ai_parser.py --provider openai`。
+- 支付、动态定价与 AI 运营分析不在本版本范围内。
 
 ## 开源说明
 

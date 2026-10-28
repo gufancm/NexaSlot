@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
+    ai,
     login,
     notifications,
     operations,
@@ -28,6 +29,7 @@ api_router.include_router(waitlist.router)
 api_router.include_router(scheduling.router)
 api_router.include_router(notifications.router)
 api_router.include_router(operations.router)
+api_router.include_router(ai.router)
 
 
 if settings.FASTAPI_ENV == "development":

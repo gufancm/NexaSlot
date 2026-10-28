@@ -4,6 +4,7 @@ import { Building2, Search } from "lucide-react"
 import { useState } from "react"
 
 import { ResourcesService, SitesService } from "@/client"
+import { SmartBookingDialog } from "@/components/ai/SmartBookingDialog"
 import { CreateOrganizationDialog } from "@/components/Organizations/CreateOrganizationDialog"
 import { ResourceCard } from "@/components/Resources/ResourceCard"
 import { Button } from "@/components/ui/button"
@@ -135,6 +136,7 @@ function ResourceCenter() {
             ))}
           </SelectContent>
         </Select>
+        <SmartBookingDialog />
       </div>
 
       {resourcesQuery.isLoading ? (

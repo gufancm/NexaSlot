@@ -76,6 +76,19 @@ class Settings(BaseSettings):
     MATCH_WEIGHT_SITE: float = 0.3
     MATCH_WEIGHT_WINDOW: float = 0.2
 
+    # V3 Lite: controlled natural-language booking assistant. The LLM only
+    # extracts candidate fields; matching and reservations stay in V1/V2.
+    AI_ENABLED: bool = False
+    LLM_PROVIDER: Literal["mock", "openai"] = "mock"
+    LLM_API_KEY: str | None = None
+    LLM_BASE_URL: str = "https://api.openai.com/v1"
+    LLM_MODEL: str = "gpt-4o-mini"
+    LLM_TIMEOUT_SECONDS: float = 12.0
+    LLM_MAX_OUTPUT_TOKENS: int = 512
+    LLM_MAX_RETRIES: int = 1
+    RATE_LIMIT_AI_CAPACITY: int = 5
+    RATE_LIMIT_AI_REFILL_PER_MINUTE: float = 5
+
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
     SMTP_PORT: int = 587

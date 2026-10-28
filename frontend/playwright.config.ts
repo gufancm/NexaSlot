@@ -2,6 +2,11 @@ import { defineConfig, devices } from '@playwright/test';
 import 'dotenv/config'
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173'
+const browserChannel = process.env.PLAYWRIGHT_CHANNEL as
+  | 'chrome'
+  | 'msedge'
+  | 'chromium'
+  | undefined
 
 /**
  * Read environment variables from file.
@@ -34,13 +39,18 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+      use: { ...(browserChannel ? { channel: browserChannel } : {}) },
+    },
 
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user.json',
+        ...(browserChannel ? { channel: browserChannel } : {}),
       },
       dependencies: ['setup'],
     },

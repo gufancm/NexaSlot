@@ -5,6 +5,52 @@ export type ClientOptions = {
 };
 
 /**
+ * AIRecommendPublic
+ */
+export type AIRecommendPublic = {
+    /**
+     * Status
+     */
+    status: 'needs_clarification' | 'suggestions' | 'no_results' | 'unavailable';
+    /**
+     * Message
+     */
+    message: string;
+    interpreted?: InterpretedBooking;
+    /**
+     * Missing Fields
+     */
+    missing_fields?: Array<string>;
+    /**
+     * Assumptions
+     */
+    assumptions?: Array<string>;
+    /**
+     * Suggestions
+     */
+    suggestions?: Array<BookingSuggestion>;
+};
+
+/**
+ * AIRecommendRequest
+ */
+export type AIRecommendRequest = {
+    /**
+     * Org Id
+     */
+    org_id: string;
+    /**
+     * Message
+     */
+    message: string;
+    /**
+     * Site Id
+     */
+    site_id?: string | null;
+    overrides?: BookingOverrides | null;
+};
+
+/**
  * AlternativesPublic
  */
 export type AlternativesPublic = {
@@ -123,6 +169,88 @@ export type Body_login_login_access_token = {
 };
 
 /**
+ * BookingOverrides
+ *
+ * User corrections submitted from the UI. Never trusted either.
+ */
+export type BookingOverrides = {
+    /**
+     * Date
+     */
+    date?: string | null;
+    /**
+     * Time Window Start
+     */
+    time_window_start?: string | null;
+    /**
+     * Time Window End
+     */
+    time_window_end?: string | null;
+    /**
+     * Duration Minutes
+     */
+    duration_minutes?: number | null;
+    /**
+     * Party Size
+     */
+    party_size?: number | null;
+    /**
+     * Required Equipment
+     */
+    required_equipment?: Array<string> | null;
+    /**
+     * Preferred Floor
+     */
+    preferred_floor?: number | null;
+};
+
+/**
+ * BookingSuggestion
+ */
+export type BookingSuggestion = {
+    /**
+     * Resource Id
+     */
+    resource_id: string;
+    /**
+     * Resource Name
+     */
+    resource_name: string;
+    /**
+     * Start At
+     */
+    start_at: string;
+    /**
+     * End At
+     */
+    end_at: string;
+    /**
+     * Capacity
+     */
+    capacity: number;
+    /**
+     * Equipment
+     */
+    equipment?: Array<string>;
+    /**
+     * Location
+     */
+    location: string;
+    /**
+     * Timezone
+     */
+    timezone: string;
+    /**
+     * Score
+     */
+    score: number;
+    /**
+     * Reason
+     */
+    reason: string;
+};
+
+/**
  * DashboardPublic
  */
 export type DashboardPublic = {
@@ -160,6 +288,52 @@ export type HTTPValidationError = {
      * Detail
      */
     detail?: Array<ValidationError>;
+};
+
+/**
+ * InterpretedBooking
+ */
+export type InterpretedBooking = {
+    /**
+     * Resource Type
+     */
+    resource_type?: string | null;
+    /**
+     * Date
+     */
+    date?: string | null;
+    /**
+     * Time Window Start
+     */
+    time_window_start?: string | null;
+    /**
+     * Time Window End
+     */
+    time_window_end?: string | null;
+    /**
+     * Duration Minutes
+     */
+    duration_minutes?: number | null;
+    /**
+     * Party Size
+     */
+    party_size?: number | null;
+    /**
+     * Required Equipment
+     */
+    required_equipment?: Array<string>;
+    /**
+     * Preferred Floor
+     */
+    preferred_floor?: number | null;
+    /**
+     * Site Id
+     */
+    site_id?: string | null;
+    /**
+     * Timezone
+     */
+    timezone?: string | null;
 };
 
 /**
@@ -2948,6 +3122,31 @@ export type operationsRetryFailedOutboxEventResponses = {
 };
 
 export type operationsRetryFailedOutboxEventResponse = operationsRetryFailedOutboxEventResponses[keyof operationsRetryFailedOutboxEventResponses];
+
+export type aiRecommendBookingEndpointData = {
+    body: AIRecommendRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ai/recommend';
+};
+
+export type aiRecommendBookingEndpointErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type aiRecommendBookingEndpointError = aiRecommendBookingEndpointErrors[keyof aiRecommendBookingEndpointErrors];
+
+export type aiRecommendBookingEndpointResponses = {
+    /**
+     * Successful Response
+     */
+    200: AIRecommendPublic;
+};
+
+export type aiRecommendBookingEndpointResponse = aiRecommendBookingEndpointResponses[keyof aiRecommendBookingEndpointResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;
