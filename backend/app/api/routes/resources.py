@@ -1,4 +1,5 @@
 import json
+import time
 import uuid
 from datetime import date, timedelta
 from typing import Annotated
@@ -8,8 +9,19 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.api.deps import CurrentUser, SessionDep, require_org, require_resource
+from app.cache.availability import (
+    availability_key,
+    get_availability,
+    get_resource,
+    invalidate_resource,
+    lock_key,
+    resource_key,
+    set_availability,
+    set_resource,
+)
 from app.core.config import settings
 from app.core.errors import api_error
+from app.core.redis_sync import acquire_lock, cache_delete
 from app.core.time import from_db, get_timezone, local_now, to_db, utcnow
 from app.models import (
     OpeningRule,
@@ -162,6 +174,28 @@ def read_resource(
     session: SessionDep,
     access: Annotated[ResourceAccess, Depends(require_resource())],
 ) -> ResourcePublic:
+    key = resource_key(access.org.organization.id, access.resource.id)
+    cached = get_resource(key)
+    if cached is not None:
+        return ResourcePublic.model_validate(cached)
+
+    lock = lock_key(
+        "resource", access.org.organization.id, access.resource.id, "detail"
+    )
+    if acquire_lock(lock, ttl_seconds=5):
+        try:
+            public = resource_public(session, access.resource, access.site)
+            set_resource(key, public.model_dump(mode="json"))
+            return public
+        finally:
+            cache_delete(lock)
+
+    # Another request is rebuilding this key. Give it a brief chance before
+    # falling back to MySQL instead of sending every waiter to the database.
+    time.sleep(0.05)
+    cached = get_resource(key)
+    if cached is not None:
+        return ResourcePublic.model_validate(cached)
     return resource_public(session, access.resource, access.site)
 
 
@@ -214,6 +248,7 @@ def update_resource(
     )
     session.commit()
     session.refresh(resource)
+    invalidate_resource(resource.id)
     return resource_public(session, resource, access.site)
 
 
@@ -284,6 +319,7 @@ def replace_opening_rules(
         detail={"rule_count": len(created)},
     )
     session.commit()
+    invalidate_resource(resource_id)
     for rule in created:
         session.refresh(rule)
     return OpeningRulesPublic(
@@ -386,6 +422,7 @@ def create_blackout(
     )
     session.commit()
     session.refresh(blackout)
+    invalidate_resource(access.resource.id)
     return BlackoutPublic(
         id=blackout.id,
         resource_id=blackout.resource_id,
@@ -412,4 +449,25 @@ def read_availability(
             ErrorCode.INVALID_REQUEST,
             "Only dates within the booking window can be queried",
         )
+
+    key = availability_key(access.org.organization.id, access.resource.id, day)
+    cached = get_availability(key)
+    if cached is not None:
+        return AvailabilityPublic.model_validate(cached)
+
+    lock = lock_key(
+        "availability", access.org.organization.id, access.resource.id, day.isoformat()
+    )
+    if acquire_lock(lock, ttl_seconds=5):
+        try:
+            public = build_availability(session, access.resource, access.site, day)
+            set_availability(key, public.model_dump(mode="json"))
+            return public
+        finally:
+            cache_delete(lock)
+
+    time.sleep(0.05)
+    cached = get_availability(key)
+    if cached is not None:
+        return AvailabilityPublic.model_validate(cached)
     return build_availability(session, access.resource, access.site, day)

@@ -3,10 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { CalendarX2, Clock, MapPin } from "lucide-react"
 import { useState } from "react"
 
-import {
-  type ReservationPublic,
-  ReservationsService,
-} from "@/client"
+import { type ReservationPublic, ReservationsService } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -123,7 +120,10 @@ function MyReservationsPage() {
                   <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <MapPin className="size-3.5" />
                     {reservation.site_name} · 下单于{" "}
-                    {formatDateTime(reservation.created_at, reservation.timezone)}
+                    {formatDateTime(
+                      reservation.created_at,
+                      reservation.timezone,
+                    )}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -178,7 +178,10 @@ function MyReservationsPage() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={target !== null} onOpenChange={(open) => !open && setTarget(null)}>
+      <Dialog
+        open={target !== null}
+        onOpenChange={(open) => !open && setTarget(null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>取消这笔预约？</DialogTitle>

@@ -3,7 +3,8 @@ from datetime import datetime, time
 from enum import StrEnum
 
 from pydantic import EmailStr
-from sqlalchemy import JSON, Column, DateTime, Index, Time, UniqueConstraint
+from sqlalchemy import JSON, Column, DateTime, Index, String, Time, UniqueConstraint
+from sqlalchemy.dialects.mysql import DATETIME as MySQLDateTime
 from sqlmodel import Field, SQLModel
 
 from app.core.time import db_now
@@ -45,6 +46,29 @@ class SlotStatus(StrEnum):
 class ReservationStatus(StrEnum):
     CONFIRMED = "CONFIRMED"
     CANCELLED = "CANCELLED"
+
+
+class WaitlistStatus(StrEnum):
+    WAITING = "WAITING"
+    OFFERED = "OFFERED"
+    CONFIRMED = "CONFIRMED"
+    EXPIRED = "EXPIRED"
+    DECLINED = "DECLINED"
+    CANCELLED = "CANCELLED"
+
+
+class HoldStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    CONSUMED = "CONSUMED"
+    EXPIRED = "EXPIRED"
+    RELEASED = "RELEASED"
+
+
+class OutboxStatus(StrEnum):
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    DONE = "DONE"
+    FAILED = "FAILED"
 
 
 # ---------------------------------------------------------------------------
@@ -268,7 +292,13 @@ class ResourceSlot(SQLModel, table=True):
         default=None,
         foreign_key="reservations.id",
         nullable=True,
-        ondelete="SET NULL",
+        ondelete="RESTRICT",
+    )
+    current_hold_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="booking_holds.id",
+        nullable=True,
+        ondelete="RESTRICT",
     )
 
 
@@ -332,6 +362,140 @@ class AuditLog(SQLModel, table=True):
     target_type: str = Field(max_length=32)
     target_id: str = Field(max_length=64)
     detail: dict | None = Field(default=None, sa_column=Column(JSON, nullable=True))
+    created_at: datetime = Field(
+        default_factory=db_now, sa_column=Column(DateTime, nullable=False)
+    )
+
+
+# ---------------------------------------------------------------------------
+# V2: waitlist, temporary holds, notifications and transactional outbox
+# ---------------------------------------------------------------------------
+
+
+class BookingHold(SQLModel, table=True):
+    __tablename__ = "booking_holds"
+    __table_args__ = (
+        Index("ix_holds_status_expires", "status", "expires_at"),
+        Index("ix_holds_resource_start", "resource_id", "start_at"),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: uuid.UUID = Field(
+        foreign_key="organizations.id", nullable=False, ondelete="RESTRICT"
+    )
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="RESTRICT"
+    )
+    resource_id: uuid.UUID = Field(
+        foreign_key="resources.id", nullable=False, ondelete="RESTRICT"
+    )
+    start_at: datetime = Field(sa_column=Column(DateTime, nullable=False))
+    end_at: datetime = Field(sa_column=Column(DateTime, nullable=False))
+    status: str = Field(default=HoldStatus.ACTIVE.value, max_length=20)
+    expires_at: datetime = Field(sa_column=Column(DateTime, nullable=False))
+    reservation_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="reservations.id",
+        nullable=True,
+        ondelete="SET NULL",
+    )
+    created_at: datetime = Field(
+        default_factory=db_now, sa_column=Column(MySQLDateTime(fsp=6), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=db_now, sa_column=Column(MySQLDateTime(fsp=6), nullable=False)
+    )
+
+
+class WaitlistEntry(SQLModel, table=True):
+    __tablename__ = "waitlist_entries"
+    __table_args__ = (
+        Index(
+            "ix_waitlist_queue",
+            "resource_id",
+            "start_at",
+            "end_at",
+            "status",
+            "created_at",
+            "id",
+        ),
+        Index("ix_waitlist_user_created", "user_id", "created_at"),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: uuid.UUID = Field(
+        foreign_key="organizations.id", nullable=False, ondelete="RESTRICT"
+    )
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="RESTRICT"
+    )
+    resource_id: uuid.UUID = Field(
+        foreign_key="resources.id", nullable=False, ondelete="RESTRICT"
+    )
+    start_at: datetime = Field(sa_column=Column(DateTime, nullable=False))
+    end_at: datetime = Field(sa_column=Column(DateTime, nullable=False))
+    status: str = Field(default=WaitlistStatus.WAITING.value, max_length=20)
+    hold_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="booking_holds.id",
+        nullable=True,
+        ondelete="SET NULL",
+    )
+    created_at: datetime = Field(
+        default_factory=db_now, sa_column=Column(MySQLDateTime(fsp=6), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=db_now, sa_column=Column(MySQLDateTime(fsp=6), nullable=False)
+    )
+
+
+class Notification(SQLModel, table=True):
+    __tablename__ = "notifications"
+    __table_args__ = (
+        UniqueConstraint("event_id", "user_id", name="uq_notification_event_user"),
+        Index("ix_notifications_user_created", "user_id", "created_at"),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE"
+    )
+    organization_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="organizations.id",
+        nullable=True,
+        ondelete="SET NULL",
+    )
+    event_id: uuid.UUID = Field(nullable=False)
+    type: str = Field(max_length=64)
+    payload: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    read_at: datetime | None = Field(
+        default=None, sa_column=Column(DateTime, nullable=True)
+    )
+    created_at: datetime = Field(
+        default_factory=db_now, sa_column=Column(DateTime, nullable=False)
+    )
+
+
+class OutboxEvent(SQLModel, table=True):
+    __tablename__ = "outbox_events"
+    __table_args__ = (Index("ix_outbox_status_available", "status", "available_at"),)
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    event_type: str = Field(max_length=64)
+    aggregate_id: str = Field(max_length=64)
+    payload: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    status: str = Field(default=OutboxStatus.PENDING.value, max_length=20)
+    attempts: int = Field(default=0)
+    available_at: datetime = Field(
+        default_factory=db_now, sa_column=Column(DateTime, nullable=False)
+    )
+    locked_until: datetime | None = Field(
+        default=None, sa_column=Column(DateTime, nullable=True)
+    )
+    last_error: str | None = Field(
+        default=None, sa_column=Column(String(500), nullable=True)
+    )
     created_at: datetime = Field(
         default_factory=db_now, sa_column=Column(DateTime, nullable=False)
     )

@@ -17,9 +17,12 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutDashboardRouteImport } from './routes/_layout/dashboard'
+import { Route as LayoutMatchRouteImport } from './routes/_layout/match'
+import { Route as LayoutNotificationsRouteImport } from './routes/_layout/notifications'
 import { Route as LayoutReservationsRouteImport } from './routes/_layout/reservations'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutUsersRouteImport } from './routes/_layout/users'
+import { Route as LayoutWaitlistRouteImport } from './routes/_layout/waitlist'
 import { Route as LayoutResourcesResourceIdRouteImport } from './routes/_layout/resources.$resourceId'
 
 const LayoutRoute = LayoutRouteImport.update({
@@ -61,6 +64,16 @@ const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutMatchRoute = LayoutMatchRouteImport.update({
+  id: '/match',
+  path: '/match',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutNotificationsRoute = LayoutNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutReservationsRoute = LayoutReservationsRouteImport.update({
   id: '/reservations',
   path: '/reservations',
@@ -74,6 +87,11 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
 const LayoutUsersRoute = LayoutUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutWaitlistRoute = LayoutWaitlistRouteImport.update({
+  id: '/waitlist',
+  path: '/waitlist',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutResourcesResourceIdRoute =
@@ -91,9 +109,12 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/dashboard': typeof LayoutDashboardRoute
+  '/match': typeof LayoutMatchRoute
+  '/notifications': typeof LayoutNotificationsRoute
   '/reservations': typeof LayoutReservationsRoute
   '/settings': typeof LayoutSettingsRoute
   '/users': typeof LayoutUsersRoute
+  '/waitlist': typeof LayoutWaitlistRoute
   '/resources/$resourceId': typeof LayoutResourcesResourceIdRoute
 }
 export interface FileRoutesByTo {
@@ -103,9 +124,12 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/dashboard': typeof LayoutDashboardRoute
+  '/match': typeof LayoutMatchRoute
+  '/notifications': typeof LayoutNotificationsRoute
   '/reservations': typeof LayoutReservationsRoute
   '/settings': typeof LayoutSettingsRoute
   '/users': typeof LayoutUsersRoute
+  '/waitlist': typeof LayoutWaitlistRoute
   '/': typeof LayoutIndexRoute
   '/resources/$resourceId': typeof LayoutResourcesResourceIdRoute
 }
@@ -118,9 +142,12 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/dashboard': typeof LayoutDashboardRoute
+  '/_layout/match': typeof LayoutMatchRoute
+  '/_layout/notifications': typeof LayoutNotificationsRoute
   '/_layout/reservations': typeof LayoutReservationsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/users': typeof LayoutUsersRoute
+  '/_layout/waitlist': typeof LayoutWaitlistRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/resources/$resourceId': typeof LayoutResourcesResourceIdRoute
 }
@@ -134,9 +161,12 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/dashboard'
+    | '/match'
+    | '/notifications'
     | '/reservations'
     | '/settings'
     | '/users'
+    | '/waitlist'
     | '/resources/$resourceId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -146,9 +176,12 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/dashboard'
+    | '/match'
+    | '/notifications'
     | '/reservations'
     | '/settings'
     | '/users'
+    | '/waitlist'
     | '/'
     | '/resources/$resourceId'
   id:
@@ -160,9 +193,12 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/dashboard'
+    | '/_layout/match'
+    | '/_layout/notifications'
     | '/_layout/reservations'
     | '/_layout/settings'
     | '/_layout/users'
+    | '/_layout/waitlist'
     | '/_layout/'
     | '/_layout/resources/$resourceId'
   fileRoutesById: FileRoutesById
@@ -233,6 +269,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutDashboardRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/match': {
+      id: '/_layout/match'
+      path: '/match'
+      fullPath: '/match'
+      preLoaderRoute: typeof LayoutMatchRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/notifications': {
+      id: '/_layout/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof LayoutNotificationsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/reservations': {
       id: '/_layout/reservations'
       path: '/reservations'
@@ -254,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutUsersRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/waitlist': {
+      id: '/_layout/waitlist'
+      path: '/waitlist'
+      fullPath: '/waitlist'
+      preLoaderRoute: typeof LayoutWaitlistRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/resources/$resourceId': {
       id: '/_layout/resources/$resourceId'
       path: '/resources/$resourceId'
@@ -267,9 +324,12 @@ declare module '@tanstack/react-router' {
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutDashboardRoute: typeof LayoutDashboardRoute
+  LayoutMatchRoute: typeof LayoutMatchRoute
+  LayoutNotificationsRoute: typeof LayoutNotificationsRoute
   LayoutReservationsRoute: typeof LayoutReservationsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutUsersRoute: typeof LayoutUsersRoute
+  LayoutWaitlistRoute: typeof LayoutWaitlistRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutResourcesResourceIdRoute: typeof LayoutResourcesResourceIdRoute
 }
@@ -277,9 +337,12 @@ interface LayoutRouteChildren {
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutDashboardRoute: LayoutDashboardRoute,
+  LayoutMatchRoute: LayoutMatchRoute,
+  LayoutNotificationsRoute: LayoutNotificationsRoute,
   LayoutReservationsRoute: LayoutReservationsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutUsersRoute: LayoutUsersRoute,
+  LayoutWaitlistRoute: LayoutWaitlistRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutResourcesResourceIdRoute: LayoutResourcesResourceIdRoute,
 }

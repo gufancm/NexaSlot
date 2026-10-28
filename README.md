@@ -1,6 +1,6 @@
 # NexaSlot — 智能资源预约与调度平台
 
-NexaSlot 是一个面向会议室、场地等**独占型资源**的预约与调度平台。后端基于 FastAPI + SQLModel + MySQL，前端基于 React + TanStack Router/Query，V1 已跑通「资源发布 → 查询空闲时段 → 提交预约 → 查看订单 → 取消释放」的完整业务闭环，并用数据库事务保证并发预约的正确性。
+NexaSlot 是一个面向会议室、场地等**独占型资源**的预约与调度平台。后端基于 FastAPI + SQLModel + MySQL，前端基于 React + TanStack Router/Query。V1 跑通「资源发布 → 查询空闲时段 → 提交预约 → 查看订单 → 取消释放」的完整闭环；V2 在此基础上补齐**自动候补、Redis 缓存与分布式限流、MySQL Outbox + Worker、确定性资源匹配、多实例与可复现压测**。
 
 ## 界面预览
 
@@ -23,7 +23,20 @@ NexaSlot 是一个面向会议室、场地等**独占型资源**的预约与调�
 - **请求幂等**：`Idempotency-Key` 同键同参返回原结果，同键异参返回 `IDEMPOTENCY_CONFLICT`。
 - **订单与取消**：我的预约（即将开始/历史）、管理员订单视图、取消释放时间片；取消截止时间由服务端校验。
 - **审计与健康检查**：预约/取消/管理操作写入 `audit_logs`；健康检查同时探测 MySQL 与 Redis。
-- **测试**：61 个后端测试覆盖组织权限、资源规则、预约冲突、幂等、取消释放、跨租户隔离。
+- **测试**：61 个 V1 后端测试覆盖组织权限、资源规则、预约冲突、幂等、取消释放、跨租户隔离。
+
+## V2 已实现
+
+- **自动候补与临时占位**：同一资源、完全相同时间段的 FIFO 队列；资源释放时在同一事务内创建有期限的 `OFFERED` HOLD；支持确认、拒绝、超时释放与自动递补。
+- **可靠异步任务**：预约/取消与 `outbox_events` 同事务写入；Worker 使用 `SKIP LOCKED` + 租约领取，失败重试，通知按 `(event_id, user_id)` 幂等。
+- **站内通知**：顶栏未读角标与通知中心；通知由 Outbox Worker 生成，前端轮询刷新。
+- **Redis Cache-Aside**：可用性与资源详情缓存，资源版本号失效、single-flight 防击穿、Redis 故障回源 MySQL；命中率与回源量可观测。
+- **分布式限流**：Redis Lua Token Bucket，预约/候补写接口按用户分桶，多实例共享配额；超限返回 `429` + `Retry-After`。
+- **确定性资源匹配**：按人数、设备、场地、时段做硬约束过滤，再按容量/场地/时段软评分排序，返回可解释理由与替代方案。
+- **可观测性**：`X-Request-ID`、结构化请求日志、`/api/v1/operations/metrics`（Outbox 积压、HOLD、候补、通知、缓存命中）。
+- **多实例验收**：两实例共享 MySQL/Redis；限流不被放大，并发抢同一时段仅 1 笔成功。
+
+实测结果（同一台机器、10 用户、20 资源、20 秒可用性读负载）：缓存命中率 **96.94%**，P95 **22ms vs 40ms**，MySQL `Com_select` **-39.7%**。详见 [V2 性能报告](docs/v2/performance/report.md)；架构、迁移与测试见 [V2 文档](docs/v2/README.md)。
 
 ## 技术栈
 
@@ -31,7 +44,7 @@ NexaSlot 是一个面向会议室、场地等**独占型资源**的预约与调�
 | --- | --- |
 | 后端 | Python 3.14、FastAPI、SQLModel、Alembic |
 | 数据库 | MySQL 8.4（`utf8mb4`，UTC 存储） |
-| 缓存/中间件 | Redis 7.4（V1 仅健康检查，不作为预约权威数据） |
+| 缓存/中间件 | Redis 7.4（Cache-Aside、Lua 限流、single-flight；不作为预约权威数据） |
 | 前端 | React 19、TypeScript、Vite、TanStack Router / Query、Tailwind CSS、shadcn/ui |
 | 鉴权 | JWT（OAuth2 密码模式） |
 | 测试 | Pytest、Playwright |
@@ -70,6 +83,14 @@ erDiagram
 - `reservation_slots` 保留订单与时间片的历史关系；二者在同一事务内更新。
 - 时间统一以 UTC 存库，接口输出带 `Z` 的 ISO 8601；场地时区用于本地时间换算。
 
+V2 增量表（迁移 `a7c41d9e2b10` → `b8e52f1c4d90`）：
+
+- `booking_holds`：OFFER 临时占位，状态 `ACTIVE / CONSUMED / EXPIRED / RELEASED`。
+- `waitlist_entries`：候补状态机；生成列唯一索引阻止同一用户对同一窗口重复排队。
+- `notifications`：站内通知，唯一 `(event_id, user_id)` 保证 Outbox 重放幂等。
+- `outbox_events`：事务内事件，Worker 按 `status + available_at` 领取。
+- `resource_slots.current_hold_id`：与 `current_reservation_id` 通过 CHECK 约束互斥。
+
 ## 快速开始
 
 前置：`uv`、`bun`、Docker Desktop。
@@ -91,7 +112,14 @@ erDiagram
    uv run fastapi dev --port 8001
    ```
 
-3. 启动前端（另开终端）：
+3. 启动 Worker（另开终端；V2 的 OFFER 过期与通知依赖它）：
+
+   ```bash
+   cd backend
+   uv run python -m app.worker
+   ```
+
+4. 启动前端（另开终端）：
 
    ```bash
    cd frontend
@@ -99,7 +127,7 @@ erDiagram
    bun run dev
    ```
 
-4. 可选：写入演示组织与资源：
+5. 可选：写入演示组织与资源：
 
    ```bash
    cd backend
@@ -133,6 +161,23 @@ erDiagram
 | `POST` | `/api/v1/reservations/{id}/cancel` | 取消预约 |
 | `GET` | `/api/v1/organizations/{org_id}/dashboard` | 组织数据看板 |
 
+V2 新增接口：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/v1/waitlist` | 加入候补（需 `Idempotency-Key`） |
+| `GET` | `/api/v1/waitlist/me` | 我的候补与队列位置 |
+| `DELETE` | `/api/v1/waitlist/{entry_id}` | 退出候补 |
+| `GET` | `/api/v1/waitlist/offers/{hold_id}` | 查看 OFFER |
+| `POST` | `/api/v1/waitlist/offers/{hold_id}/confirm` | 确认 OFFER → 预约 |
+| `POST` | `/api/v1/waitlist/offers/{hold_id}/decline` | 拒绝 OFFER → 递补 |
+| `GET` | `/api/v1/admin/waitlist` | 组织级候补队列 |
+| `POST` | `/api/v1/scheduling/match` | 资源匹配 |
+| `GET` | `/api/v1/resources/{id}/alternatives` | 替代资源/时段 |
+| `GET/POST` | `/api/v1/notifications...` | 通知中心与已读 |
+| `GET` | `/api/v1/operations/metrics` | 运营指标 |
+| `GET/POST` | `/api/v1/operations/outbox...` | 失败事件与重试 |
+
 错误响应统一为 `{"detail": {"code": "...", "message": "..."}}`，常用错误码：`RESOURCE_NOT_FOUND`、`RESOURCE_INACTIVE`、`SLOT_UNAVAILABLE`、`BOOKING_RULE_VIOLATION`、`IDEMPOTENCY_CONFLICT`、`IDEMPOTENCY_KEY_REQUIRED`、`FORBIDDEN`。
 
 ## 测试
@@ -140,9 +185,11 @@ erDiagram
 ```bash
 cd backend
 uv run pytest
+uv run ruff check .
+uv run ruff format --check .
 ```
 
-测试连接 `.env` 中配置的 MySQL，`conftest.py` 会自动创建超级管理员。请勿把测试指向生产库。
+当前共 **74 个后端测试**（V1 61 + V2 13）。测试连接 `.env` 中配置的 MySQL，`conftest.py` 会自动创建超级管理员；请勿把测试指向生产库。
 
 前端类型检查与构建：
 
@@ -159,24 +206,31 @@ CI 配置见 `.github/workflows/test-backend.yml`：启动 MySQL/Redis 容器 �
 ```text
 backend/
   app/
-    api/routes/       组织、场地、资源、预约、用户等路由
+    api/routes/       组织、场地、资源、预约、候补、匹配、通知、运维路由
+    cache/            Cache-Aside、资源版本化失效
     core/             配置、数据库、Redis、时间、错误码
-    services/         租户鉴权、时间片、预约事务、审计
+    services/         租户鉴权、时间片、预约、候补、分配、Outbox、匹配
     models.py         SQLModel 实体
     schemas.py        请求/响应模型
     alembic/          数据库迁移
-  scripts/            初始化与演示数据脚本
+    worker.py         HOLD 过期与 Outbox Worker
+  scripts/            初始化、演示数据、压测种子、多实例验收脚本
+  locust/             Locust 场景（availability/hotspot/distributed/mixed）
   tests/              后端测试
 frontend/
-  src/routes/         资源中心、资源详情、我的预约、看板、管理后台
-  src/components/     资源卡片、组织切换、后台表格等
+  src/routes/         资源中心、资源详情、预约、候补、匹配、通知、看板、管理后台
+  src/components/     资源卡片、组织切换、通知铃铛、后台表格等
   src/client/         OpenAPI 自动生成客户端
 compose.yml           MySQL / Redis / 后端 / 代理编排
 ```
 
-## V1 不包含
+## V2 边界与后续
 
-自动候补、超时释放、Outbox/Worker、实时通知、Redis 缓存与分布式限流、LLM 预约助手、AI 调度与利用率预测。这些能力按 V2/V3 规划，详见开发任务清单。
+- 候补 FIFO 仅承诺同一资源 + 完全相同时间段；跨时段、跨资源全局排队属后续版本。
+- Outbox 为至少一次语义，通知通过唯一键幂等；不承诺外部通知恰好一次。
+- Redis 故障时缓存回源、限流默认降级放行，MySQL 事务仍是订单唯一权威。
+- 通知中心使用轮询，未实现 SSE 推送。
+- LangGraph、LLM 自然语言预约、AI 运营问答、支付与动态定价属于 V3；本版本不包含。
 
 ## 开源说明
 

@@ -32,7 +32,8 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["organizations"],
-    queryFn: async () => (await OrganizationsService.readMyOrganizations()).data,
+    queryFn: async () =>
+      (await OrganizationsService.readMyOrganizations()).data,
   })
 
   const organizations = useMemo(() => data?.data ?? [], [data])

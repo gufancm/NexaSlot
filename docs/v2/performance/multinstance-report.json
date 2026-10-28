@@ -1,0 +1,62 @@
+{
+  "instances": [
+    "http://127.0.0.1:8002",
+    "http://127.0.0.1:8003"
+  ],
+  "rate_limit": {
+    "buckets_cleared": 0,
+    "statuses": [
+      201,
+      409,
+      409,
+      409,
+      409,
+      409,
+      409,
+      409,
+      409,
+      409,
+      429
+    ],
+    "allowed": 10,
+    "limited": 1,
+    "retry_after_header": "6",
+    "passed": true
+  },
+  "concurrency": {
+    "window": {
+      "resource_id": "9675e5f0-8a58-4a55-96db-ea5cb75adbfe",
+      "start_at": "2026-10-29T01:30:00Z",
+      "end_at": "2026-10-29T02:00:00Z"
+    },
+    "statuses": [
+      201,
+      409,
+      409,
+      409,
+      409,
+      409,
+      409,
+      409,
+      409,
+      409
+    ],
+    "created": 1,
+    "conflicts": 9,
+    "rate_limited": 0,
+    "server_errors": 0,
+    "db": {
+      "confirmed_reservations": 1,
+      "winner_matches_db": true,
+      "occupied_slots": 1,
+      "slots_with_holds": 0,
+      "single_owner": true
+    },
+    "passed": true
+  },
+  "cleanup": [
+    200,
+    200
+  ],
+  "passed": true
+}

@@ -185,6 +185,8 @@ def build_availability(
             state = "PAST"
         elif slot.current_reservation_id is not None:
             state = "BOOKED"
+        elif slot.current_hold_id is not None:
+            state = "HELD"
         elif slot.status != SlotStatus.OPEN.value:
             state = "CLOSED"
         else:

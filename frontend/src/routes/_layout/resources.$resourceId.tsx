@@ -15,6 +15,8 @@ import {
   type ReservationCreate,
   ReservationsService,
   ResourcesService,
+  type WaitlistCreate,
+  WaitlistService,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -60,8 +62,11 @@ function ResourceDetailPage() {
   const resourceQuery = useQuery({
     queryKey: ["resource", resourceId],
     queryFn: async () =>
-      (await ResourcesService.readResource({ path: { resource_id: resourceId } }))
-        .data,
+      (
+        await ResourcesService.readResource({
+          path: { resource_id: resourceId },
+        })
+      ).data,
   })
 
   const resource = resourceQuery.data
@@ -97,7 +102,7 @@ function ResourceDetailPage() {
   useEffect(() => {
     setStartIndex(null)
     setEndIndex(null)
-  }, [activeDate])
+  }, [])
 
   const selection = useMemo(() => {
     if (startIndex === null || endIndex === null) {
@@ -109,7 +114,7 @@ function ResourceDetailPage() {
   }, [startIndex, endIndex, slots])
 
   const durationMinutes =
-    selection && selection.start && selection.end
+    selection?.start && selection.end
       ? Math.round(
           (new Date(selection.end.end_at).getTime() -
             new Date(selection.start.start_at).getTime()) /
@@ -117,9 +122,25 @@ function ResourceDetailPage() {
         )
       : 0
 
+  const selectedSlots = useMemo(
+    () => (selection ? slots.slice(selection.first, selection.last + 1) : []),
+    [selection, slots],
+  )
+  const allAvailable =
+    selectedSlots.length > 0 &&
+    selectedSlots.every((slot) => slot.state === "AVAILABLE")
+  const hasBusySlot = selectedSlots.some(
+    (slot) => slot.state === "BOOKED" || slot.state === "HELD",
+  )
+
   const handleSlotClick = (index: number) => {
     const slot = slots[index]
-    if (!slot || slot.state !== "AVAILABLE") {
+    if (
+      !slot ||
+      (slot.state !== "AVAILABLE" &&
+        slot.state !== "BOOKED" &&
+        slot.state !== "HELD")
+    ) {
       return
     }
     if (startIndex === null || endIndex === null) {
@@ -137,7 +158,9 @@ function ResourceDetailPage() {
     const targetFirst = index < first ? index : first
     const targetLast = index > last ? index : last
     const range = slots.slice(targetFirst, targetLast + 1)
-    if (range.some((item) => item.state !== "AVAILABLE")) {
+    if (
+      range.some((item) => item.state === "CLOSED" || item.state === "PAST")
+    ) {
       setStartIndex(index)
       setEndIndex(index)
       return
@@ -175,6 +198,26 @@ function ResourceDetailPage() {
     },
   })
 
+  const waitlistMutation = useMutation({
+    mutationFn: async (payload: WaitlistCreate) =>
+      (
+        await WaitlistService.joinWaitlistEndpoint({
+          body: payload,
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+        })
+      ).data,
+    onSuccess: async () => {
+      showSuccessToast("已加入候补，有名额释放时会通知你确认")
+      await queryClient.invalidateQueries({ queryKey: ["waitlist"] })
+      await queryClient.invalidateQueries({ queryKey: ["availability"] })
+      await navigate({ to: "/waitlist" })
+    },
+    onError: (error) => {
+      handleError.call(showErrorToast, error as Error)
+      void availabilityQuery.refetch()
+    },
+  })
+
   if (resourceQuery.isLoading) {
     return <Skeleton className="h-72 w-full" />
   }
@@ -189,7 +232,9 @@ function ResourceDetailPage() {
     )
   }
 
-  const availableCount = slots.filter((slot) => slot.state === "AVAILABLE").length
+  const availableCount = slots.filter(
+    (slot) => slot.state === "AVAILABLE",
+  ).length
 
   return (
     <div className="flex flex-col gap-6">
@@ -202,7 +247,9 @@ function ResourceDetailPage() {
         </Button>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{resource.name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {resource.name}
+            </h1>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <MapPin className="size-4" />
@@ -214,7 +261,9 @@ function ResourceDetailPage() {
               </span>
             </div>
           </div>
-          <Badge variant={resource.status === "ACTIVE" ? "default" : "secondary"}>
+          <Badge
+            variant={resource.status === "ACTIVE" ? "default" : "secondary"}
+          >
             {resource.status === "ACTIVE" ? "可预约" : "已停用"}
           </Badge>
         </div>
@@ -232,7 +281,9 @@ function ResourceDetailPage() {
               ) : null}
               <div className="flex flex-wrap gap-1.5">
                 {resource.features.length === 0 ? (
-                  <span className="text-xs text-muted-foreground">暂无设备标签</span>
+                  <span className="text-xs text-muted-foreground">
+                    暂无设备标签
+                  </span>
                 ) : (
                   resource.features.map((feature) => (
                     <span
@@ -245,8 +296,8 @@ function ResourceDetailPage() {
                 )}
               </div>
               <div className="rounded-lg bg-muted/60 p-3 text-xs leading-relaxed text-muted-foreground">
-                单次 30～240 分钟 · 最晚提前 15 分钟 · 可约未来 14 天 · 开始前 30
-                分钟可取消
+                单次 30～240 分钟 · 最晚提前 15 分钟 · 可约未来 14 天 · 开始前
+                30 分钟可取消
               </div>
             </CardContent>
           </Card>
@@ -267,7 +318,8 @@ function ResourceDetailPage() {
                       {WEEKDAYS[rule.weekday]}
                     </span>
                     <span>
-                      {rule.start_time.slice(0, 5)} - {rule.end_time.slice(0, 5)}
+                      {rule.start_time.slice(0, 5)} -{" "}
+                      {rule.end_time.slice(0, 5)}
                     </span>
                   </div>
                 ))
@@ -282,8 +334,7 @@ function ResourceDetailPage() {
               <div>
                 <CardTitle className="text-base">选择预约时段</CardTitle>
                 <CardDescription>
-                  {formatYmd(activeDate)} · 共{" "}
-                  {availableCount} 个可约时段
+                  {formatYmd(activeDate)} · 共 {availableCount} 个可约时段
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
@@ -331,7 +382,11 @@ function ResourceDetailPage() {
                     selection !== null &&
                     index >= selection.first &&
                     index <= selection.last
-                  const disabled = slot.state !== "AVAILABLE"
+                  const selectable =
+                    slot.state === "AVAILABLE" ||
+                    slot.state === "BOOKED" ||
+                    slot.state === "HELD"
+                  const disabled = !selectable
                   return (
                     <button
                       key={slot.start_at}
@@ -343,10 +398,12 @@ function ResourceDetailPage() {
                         selected
                           ? "border-primary bg-primary text-primary-foreground shadow-sm"
                           : disabled
-                            ? slot.state === "BOOKED"
-                              ? "cursor-not-allowed border-border bg-muted/60 text-muted-foreground line-through"
+                            ? slot.state === "CLOSED"
+                              ? "cursor-not-allowed border-dashed bg-muted/30 text-muted-foreground"
                               : "cursor-not-allowed border-dashed bg-muted/30 text-muted-foreground"
-                            : "border-border bg-background hover:border-primary/60 hover:bg-primary/5",
+                            : slot.state === "AVAILABLE"
+                              ? "border-border bg-background hover:border-primary/60 hover:bg-primary/5"
+                              : "border-amber-300/70 bg-amber-50/60 text-amber-900 hover:border-amber-500 dark:bg-amber-950/30 dark:text-amber-100",
                       ].join(" ")}
                     >
                       <span className="font-medium">
@@ -356,10 +413,12 @@ function ResourceDetailPage() {
                         {slot.state === "AVAILABLE"
                           ? "可预约"
                           : slot.state === "BOOKED"
-                            ? "已预约"
-                            : slot.state === "CLOSED"
-                              ? "不开放"
-                              : "已结束"}
+                            ? "已预约 · 可候补"
+                            : slot.state === "HELD"
+                              ? "候补占位"
+                              : slot.state === "CLOSED"
+                                ? "不开放"
+                                : "已结束"}
                       </span>
                     </button>
                   )
@@ -370,7 +429,7 @@ function ResourceDetailPage() {
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/50 px-4 py-3">
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="size-4 text-muted-foreground" />
-                {selection && selection.start && selection.end ? (
+                {selection?.start && selection.end ? (
                   <span>
                     {formatTime(selection.start.start_at, timezone)} -{" "}
                     {formatTime(selection.end.end_at, timezone)} ·{" "}
@@ -381,23 +440,29 @@ function ResourceDetailPage() {
                 )}
               </div>
               <LoadingButton
-                loading={createMutation.isPending}
+                loading={createMutation.isPending || waitlistMutation.isPending}
                 disabled={
                   !selection ||
                   durationMinutes < 30 ||
                   durationMinutes > 240 ||
-                  resource.status !== "ACTIVE"
+                  resource.status !== "ACTIVE" ||
+                  (!allAvailable && !hasBusySlot)
                 }
                 onClick={() => {
-                  if (!selection || !selection.start || !selection.end) return
-                  createMutation.mutate({
+                  if (!selection?.start || !selection.end) return
+                  const payload = {
                     resource_id: resource.id,
                     start_at: selection.start.start_at,
                     end_at: selection.end.end_at,
-                  })
+                  }
+                  if (allAvailable) {
+                    createMutation.mutate(payload)
+                  } else {
+                    waitlistMutation.mutate(payload)
+                  }
                 }}
               >
-                提交预约
+                {hasBusySlot ? "加入候补" : "提交预约"}
               </LoadingButton>
             </div>
           </CardContent>

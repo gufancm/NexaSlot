@@ -51,6 +51,31 @@ class Settings(BaseSettings):
     BOOKING_MAX_DURATION_MINUTES: int = 240
     BOOKING_CANCEL_CUTOFF_MINUTES: int = 30
 
+    # V2: Redis cache-aside and rate limiting. Redis stays a non-authoritative
+    # dependency; bookings are always validated against MySQL transactions.
+    CACHE_ENABLED: bool = True
+    CACHE_KEY_PREFIX: str = "nexaslot"
+    CACHE_AVAILABILITY_TTL_SECONDS: int = 60
+    CACHE_RESOURCE_TTL_SECONDS: int = 300
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_BOOKING_CAPACITY: int = 10
+    RATE_LIMIT_BOOKING_REFILL_PER_MINUTE: float = 10
+    RATE_LIMIT_WAITLIST_CAPACITY: int = 10
+    RATE_LIMIT_WAITLIST_REFILL_PER_MINUTE: float = 10
+    RATE_LIMIT_READ_CAPACITY: int = 120
+    RATE_LIMIT_READ_REFILL_PER_MINUTE: float = 120
+    RATE_LIMIT_FAIL_CLOSED_ON_WRITE: bool = False
+
+    # V2: waitlist offers, outbox worker and deterministic matching.
+    WAITLIST_OFFER_TTL_MINUTES: int = 10
+    OUTBOX_BATCH_SIZE: int = 20
+    OUTBOX_LEASE_SECONDS: int = 60
+    OUTBOX_MAX_ATTEMPTS: int = 5
+    WORKER_POLL_SECONDS: float = 2.0
+    MATCH_WEIGHT_CAPACITY: float = 0.5
+    MATCH_WEIGHT_SITE: float = 0.3
+    MATCH_WEIGHT_WINDOW: float = 0.2
+
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
     SMTP_PORT: int = 587

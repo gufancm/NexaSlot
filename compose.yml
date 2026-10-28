@@ -109,6 +109,28 @@ services:
       - traefik.http.routers.backend-http.rule=Host(`${DOMAIN:-localhost}`)
       - traefik.http.routers.backend-http.entrypoints=http
 
+  worker:
+    image: backend:latest
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
+    command: ["python", "-m", "app.worker"]
+    environment:
+      PROJECT_NAME: ${PROJECT_NAME:?Variable not set}
+      SECRET_KEY: ${SECRET_KEY:?Variable not set}
+      FIRST_SUPERUSER: ${FIRST_SUPERUSER:?Variable not set}
+      FIRST_SUPERUSER_PASSWORD: ${FIRST_SUPERUSER_PASSWORD:?Variable not set}
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-nexaslot}:${MYSQL_PASSWORD:?Variable not set}@db:3306/app?charset=utf8mb4
+      REDIS_URL: redis://redis:6379/0
+      WORKER_POLL_SECONDS: ${WORKER_POLL_SECONDS:-2.0}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+
 volumes:
   app-db-data:
   app-redis-data:

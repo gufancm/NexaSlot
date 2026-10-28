@@ -16,7 +16,9 @@ export function ResourceCard({ resource }: { resource: ResourcePublic }) {
       <Card className="h-full gap-4 py-5 transition group-hover:-translate-y-0.5 group-hover:border-primary/40 group-hover:shadow-md">
         <CardHeader className="gap-1 px-5">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="text-base font-semibold leading-tight">{resource.name}</h3>
+            <h3 className="text-base font-semibold leading-tight">
+              {resource.name}
+            </h3>
             <Badge variant={active ? "default" : "secondary"}>
               {active ? "可预约" : "已停用"}
             </Badge>

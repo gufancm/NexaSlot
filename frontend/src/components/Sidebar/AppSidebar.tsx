@@ -1,8 +1,11 @@
 import {
+  Bell,
+  CalendarClock,
   CalendarDays,
   LayoutDashboard,
   LibraryBig,
   Settings2,
+  Sparkles,
   Users,
 } from "lucide-react"
 
@@ -25,7 +28,10 @@ export function AppSidebar() {
 
   const items: Item[] = [
     { icon: LibraryBig, title: "资源中心", path: "/" },
+    { icon: Sparkles, title: "智能匹配", path: "/match" },
     { icon: CalendarDays, title: "我的预约", path: "/reservations" },
+    { icon: CalendarClock, title: "我的候补", path: "/waitlist" },
+    { icon: Bell, title: "通知中心", path: "/notifications" },
   ]
 
   if (isAdmin) {

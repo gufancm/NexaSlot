@@ -3,7 +3,7 @@ from datetime import UTC, date, datetime, time
 from enum import StrEnum
 from typing import Annotated
 
-from pydantic import EmailStr, PlainSerializer, field_validator
+from pydantic import EmailStr, PlainSerializer, field_validator, model_validator
 from sqlmodel import Field, SQLModel
 
 
@@ -21,6 +21,14 @@ class ErrorCode(StrEnum):
     MEMBER_NOT_FOUND = "MEMBER_NOT_FOUND"
     DUPLICATE_MEMBER = "DUPLICATE_MEMBER"
     CONFLICT = "CONFLICT"
+    WAITLIST_NOT_FOUND = "WAITLIST_NOT_FOUND"
+    DUPLICATE_WAITLIST = "DUPLICATE_WAITLIST"
+    WAITLIST_NOT_NEEDED = "WAITLIST_NOT_NEEDED"
+    HOLD_NOT_FOUND = "HOLD_NOT_FOUND"
+    OFFER_EXPIRED = "OFFER_EXPIRED"
+    OFFER_NOT_ACTIVE = "OFFER_NOT_ACTIVE"
+    RATE_LIMITED = "RATE_LIMITED"
+    SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
 
 
 def _require_timezone(value: datetime) -> datetime:
@@ -295,3 +303,163 @@ class DashboardPublic(SQLModel):
     resources_total: int
     sites_total: int
     occupied_slot_ratio: float
+
+
+# ---------------------------------------------------------------------------
+# V2: waitlist, holds, notifications, matching, operations
+# ---------------------------------------------------------------------------
+
+
+class WaitlistCreate(SQLModel):
+    resource_id: uuid.UUID
+    start_at: datetime
+    end_at: datetime
+
+    @field_validator("start_at", "end_at")
+    @classmethod
+    def _tz(cls, value: datetime) -> datetime:
+        return _require_timezone(value)
+
+    @field_validator("end_at")
+    @classmethod
+    def _order(cls, value: datetime, info) -> datetime:
+        start = info.data.get("start_at")
+        if start is not None and value <= start:
+            raise ValueError("end_at must be after start_at")
+        return value
+
+
+class OfferPublic(SQLModel):
+    id: uuid.UUID
+    resource_id: uuid.UUID
+    resource_name: str
+    site_name: str
+    timezone: str
+    start_at: UtcDateTime
+    end_at: UtcDateTime
+    status: str
+    expires_at: UtcDateTime
+    reservation_id: uuid.UUID | None = None
+
+
+class WaitlistEntryPublic(SQLModel):
+    id: uuid.UUID
+    organization_id: uuid.UUID
+    resource_id: uuid.UUID
+    resource_name: str
+    site_name: str
+    timezone: str
+    user_id: uuid.UUID
+    user_email: EmailStr
+    start_at: UtcDateTime
+    end_at: UtcDateTime
+    status: str
+    queue_position: int | None = None
+    hold: OfferPublic | None = None
+    created_at: UtcDateTime
+    updated_at: UtcDateTime
+
+
+class WaitlistPublic(SQLModel):
+    data: list[WaitlistEntryPublic]
+    count: int
+
+
+class NotificationPublic(SQLModel):
+    id: uuid.UUID
+    type: str
+    title: str
+    message: str
+    read_at: UtcDateTime | None
+    created_at: UtcDateTime
+
+
+class NotificationsPublic(SQLModel):
+    data: list[NotificationPublic]
+    count: int
+    unread_count: int
+
+
+class ResourceMatchRequest(SQLModel):
+    org_id: uuid.UUID
+    party_size: int = Field(default=1, ge=1, le=10000)
+    start_at: datetime | None = None
+    end_at: datetime | None = None
+    duration_minutes: int | None = Field(default=None, ge=30, le=240)
+    required_features: list[str] = Field(default_factory=list)
+    preferred_site_id: uuid.UUID | None = None
+    limit: int = Field(default=5, ge=1, le=20)
+
+    @field_validator("start_at", "end_at")
+    @classmethod
+    def _tz(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        return _require_timezone(value)
+
+    @model_validator(mode="after")
+    def _window(self) -> ResourceMatchRequest:
+        if (self.start_at is None) != (self.end_at is None):
+            raise ValueError("start_at and end_at must be provided together")
+        if self.start_at and self.end_at and self.end_at <= self.start_at:
+            raise ValueError("end_at must be after start_at")
+        if self.start_at and self.end_at and self.duration_minutes is not None:
+            actual = int((self.end_at - self.start_at).total_seconds() // 60)
+            if actual != self.duration_minutes:
+                raise ValueError("duration_minutes must match the requested window")
+        return self
+
+
+class ResourceMatchCandidate(SQLModel):
+    resource: ResourcePublic
+    score: float
+    reasons: list[str]
+    available: bool
+
+
+class ResourceMatchPublic(SQLModel):
+    data: list[ResourceMatchCandidate]
+    count: int
+    window_requested: bool
+
+
+class SlotRange(SQLModel):
+    start_at: UtcDateTime
+    end_at: UtcDateTime
+
+
+class AlternativesPublic(SQLModel):
+    resource_id: uuid.UUID
+    same_resource_windows: list[SlotRange]
+    other_resources: list[ResourceMatchCandidate]
+
+
+class OperationsMetricsPublic(SQLModel):
+    outbox_pending: int
+    outbox_failed: int
+    outbox_oldest_age_seconds: int | None
+    active_holds: int
+    expired_active_holds: int
+    waitlist_waiting: int
+    waitlist_offered: int
+    reservations_confirmed: int
+    notifications_unread: int
+    cache_hits: int
+    cache_misses: int
+    cache_hit_rate: float
+
+
+class OutboxEventPublic(SQLModel):
+    id: uuid.UUID
+    event_type: str
+    aggregate_id: str
+    status: str
+    attempts: int
+    last_error: str | None
+    available_at: UtcDateTime
+    created_at: UtcDateTime
+
+
+class OutboxEventsPublic(SQLModel):
+    data: list[OutboxEventPublic]
+    count: int

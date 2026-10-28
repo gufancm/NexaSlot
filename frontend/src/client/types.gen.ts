@@ -5,6 +5,24 @@ export type ClientOptions = {
 };
 
 /**
+ * AlternativesPublic
+ */
+export type AlternativesPublic = {
+    /**
+     * Resource Id
+     */
+    resource_id: string;
+    /**
+     * Same Resource Windows
+     */
+    same_resource_windows: Array<SlotRange>;
+    /**
+     * Other Resources
+     */
+    other_resources: Array<ResourceMatchCandidate>;
+};
+
+/**
  * AvailabilityPublic
  */
 export type AvailabilityPublic = {
@@ -233,6 +251,100 @@ export type NewPassword = {
 };
 
 /**
+ * NotificationPublic
+ */
+export type NotificationPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Type
+     */
+    type: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Message
+     */
+    message: string;
+    /**
+     * Read At
+     */
+    read_at: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * NotificationsPublic
+ */
+export type NotificationsPublic = {
+    /**
+     * Data
+     */
+    data: Array<NotificationPublic>;
+    /**
+     * Count
+     */
+    count: number;
+    /**
+     * Unread Count
+     */
+    unread_count: number;
+};
+
+/**
+ * OfferPublic
+ */
+export type OfferPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Resource Id
+     */
+    resource_id: string;
+    /**
+     * Resource Name
+     */
+    resource_name: string;
+    /**
+     * Site Name
+     */
+    site_name: string;
+    /**
+     * Timezone
+     */
+    timezone: string;
+    /**
+     * Start At
+     */
+    start_at: string;
+    /**
+     * End At
+     */
+    end_at: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Expires At
+     */
+    expires_at: string;
+    /**
+     * Reservation Id
+     */
+    reservation_id?: string | null;
+};
+
+/**
  * OpeningRuleCreate
  */
 export type OpeningRuleCreate = {
@@ -297,6 +409,60 @@ export type OpeningRulesReplace = {
 };
 
 /**
+ * OperationsMetricsPublic
+ */
+export type OperationsMetricsPublic = {
+    /**
+     * Outbox Pending
+     */
+    outbox_pending: number;
+    /**
+     * Outbox Failed
+     */
+    outbox_failed: number;
+    /**
+     * Outbox Oldest Age Seconds
+     */
+    outbox_oldest_age_seconds: number | null;
+    /**
+     * Active Holds
+     */
+    active_holds: number;
+    /**
+     * Expired Active Holds
+     */
+    expired_active_holds: number;
+    /**
+     * Waitlist Waiting
+     */
+    waitlist_waiting: number;
+    /**
+     * Waitlist Offered
+     */
+    waitlist_offered: number;
+    /**
+     * Reservations Confirmed
+     */
+    reservations_confirmed: number;
+    /**
+     * Notifications Unread
+     */
+    notifications_unread: number;
+    /**
+     * Cache Hits
+     */
+    cache_hits: number;
+    /**
+     * Cache Misses
+     */
+    cache_misses: number;
+    /**
+     * Cache Hit Rate
+     */
+    cache_hit_rate: number;
+};
+
+/**
  * OrganizationCreate
  */
 export type OrganizationCreate = {
@@ -340,6 +506,58 @@ export type OrganizationsPublic = {
      * Data
      */
     data: Array<OrganizationPublic>;
+};
+
+/**
+ * OutboxEventPublic
+ */
+export type OutboxEventPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Event Type
+     */
+    event_type: string;
+    /**
+     * Aggregate Id
+     */
+    aggregate_id: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Attempts
+     */
+    attempts: number;
+    /**
+     * Last Error
+     */
+    last_error: string | null;
+    /**
+     * Available At
+     */
+    available_at: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * OutboxEventsPublic
+ */
+export type OutboxEventsPublic = {
+    /**
+     * Data
+     */
+    data: Array<OutboxEventPublic>;
+    /**
+     * Count
+     */
+    count: number;
 };
 
 /**
@@ -482,6 +700,81 @@ export type ResourceCreate = {
      * Features
      */
     features?: Array<string>;
+};
+
+/**
+ * ResourceMatchCandidate
+ */
+export type ResourceMatchCandidate = {
+    resource: ResourcePublic;
+    /**
+     * Score
+     */
+    score: number;
+    /**
+     * Reasons
+     */
+    reasons: Array<string>;
+    /**
+     * Available
+     */
+    available: boolean;
+};
+
+/**
+ * ResourceMatchPublic
+ */
+export type ResourceMatchPublic = {
+    /**
+     * Data
+     */
+    data: Array<ResourceMatchCandidate>;
+    /**
+     * Count
+     */
+    count: number;
+    /**
+     * Window Requested
+     */
+    window_requested: boolean;
+};
+
+/**
+ * ResourceMatchRequest
+ */
+export type ResourceMatchRequest = {
+    /**
+     * Org Id
+     */
+    org_id: string;
+    /**
+     * Party Size
+     */
+    party_size?: number;
+    /**
+     * Start At
+     */
+    start_at?: string | null;
+    /**
+     * End At
+     */
+    end_at?: string | null;
+    /**
+     * Duration Minutes
+     */
+    duration_minutes?: number | null;
+    /**
+     * Required Features
+     */
+    required_features?: Array<string>;
+    /**
+     * Preferred Site Id
+     */
+    preferred_site_id?: string | null;
+    /**
+     * Limit
+     */
+    limit?: number;
 };
 
 /**
@@ -689,6 +982,20 @@ export type SlotPublic = {
 };
 
 /**
+ * SlotRange
+ */
+export type SlotRange = {
+    /**
+     * Start At
+     */
+    start_at: string;
+    /**
+     * End At
+     */
+    end_at: string;
+};
+
+/**
  * Token
  */
 export type Token = {
@@ -870,6 +1177,101 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * WaitlistCreate
+ */
+export type WaitlistCreate = {
+    /**
+     * Resource Id
+     */
+    resource_id: string;
+    /**
+     * Start At
+     */
+    start_at: string;
+    /**
+     * End At
+     */
+    end_at: string;
+};
+
+/**
+ * WaitlistEntryPublic
+ */
+export type WaitlistEntryPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Organization Id
+     */
+    organization_id: string;
+    /**
+     * Resource Id
+     */
+    resource_id: string;
+    /**
+     * Resource Name
+     */
+    resource_name: string;
+    /**
+     * Site Name
+     */
+    site_name: string;
+    /**
+     * Timezone
+     */
+    timezone: string;
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * User Email
+     */
+    user_email: string;
+    /**
+     * Start At
+     */
+    start_at: string;
+    /**
+     * End At
+     */
+    end_at: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Queue Position
+     */
+    queue_position?: number | null;
+    hold?: OfferPublic | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+};
+
+/**
+ * WaitlistPublic
+ */
+export type WaitlistPublic = {
+    /**
+     * Data
+     */
+    data: Array<WaitlistEntryPublic>;
+    /**
+     * Count
+     */
+    count: number;
 };
 
 export type loginLoginAccessTokenData = {
@@ -2087,6 +2489,465 @@ export type reservationsCancelReservationEndpointResponses = {
 };
 
 export type reservationsCancelReservationEndpointResponse = reservationsCancelReservationEndpointResponses[keyof reservationsCancelReservationEndpointResponses];
+
+export type waitlistJoinWaitlistEndpointData = {
+    body: WaitlistCreate;
+    headers?: {
+        /**
+         * Idempotency-Key
+         */
+        'Idempotency-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/waitlist';
+};
+
+export type waitlistJoinWaitlistEndpointErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type waitlistJoinWaitlistEndpointError = waitlistJoinWaitlistEndpointErrors[keyof waitlistJoinWaitlistEndpointErrors];
+
+export type waitlistJoinWaitlistEndpointResponses = {
+    /**
+     * Successful Response
+     */
+    201: WaitlistEntryPublic;
+};
+
+export type waitlistJoinWaitlistEndpointResponse = waitlistJoinWaitlistEndpointResponses[keyof waitlistJoinWaitlistEndpointResponses];
+
+export type waitlistReadMyWaitlistData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Status
+         */
+        status?: string | null;
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Page Size
+         */
+        page_size?: number;
+    };
+    url: '/api/v1/waitlist/me';
+};
+
+export type waitlistReadMyWaitlistErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type waitlistReadMyWaitlistError = waitlistReadMyWaitlistErrors[keyof waitlistReadMyWaitlistErrors];
+
+export type waitlistReadMyWaitlistResponses = {
+    /**
+     * Successful Response
+     */
+    200: WaitlistPublic;
+};
+
+export type waitlistReadMyWaitlistResponse = waitlistReadMyWaitlistResponses[keyof waitlistReadMyWaitlistResponses];
+
+export type waitlistLeaveWaitlistEndpointData = {
+    body?: never;
+    path: {
+        /**
+         * Entry Id
+         */
+        entry_id: string;
+    };
+    query?: never;
+    url: '/api/v1/waitlist/{entry_id}';
+};
+
+export type waitlistLeaveWaitlistEndpointErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type waitlistLeaveWaitlistEndpointError = waitlistLeaveWaitlistEndpointErrors[keyof waitlistLeaveWaitlistEndpointErrors];
+
+export type waitlistLeaveWaitlistEndpointResponses = {
+    /**
+     * Successful Response
+     */
+    200: WaitlistEntryPublic;
+};
+
+export type waitlistLeaveWaitlistEndpointResponse = waitlistLeaveWaitlistEndpointResponses[keyof waitlistLeaveWaitlistEndpointResponses];
+
+export type waitlistReadOfferData = {
+    body?: never;
+    path: {
+        /**
+         * Hold Id
+         */
+        hold_id: string;
+    };
+    query?: never;
+    url: '/api/v1/waitlist/offers/{hold_id}';
+};
+
+export type waitlistReadOfferErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type waitlistReadOfferError = waitlistReadOfferErrors[keyof waitlistReadOfferErrors];
+
+export type waitlistReadOfferResponses = {
+    /**
+     * Successful Response
+     */
+    200: OfferPublic;
+};
+
+export type waitlistReadOfferResponse = waitlistReadOfferResponses[keyof waitlistReadOfferResponses];
+
+export type waitlistConfirmOfferEndpointData = {
+    body?: never;
+    path: {
+        /**
+         * Hold Id
+         */
+        hold_id: string;
+    };
+    query?: never;
+    url: '/api/v1/waitlist/offers/{hold_id}/confirm';
+};
+
+export type waitlistConfirmOfferEndpointErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type waitlistConfirmOfferEndpointError = waitlistConfirmOfferEndpointErrors[keyof waitlistConfirmOfferEndpointErrors];
+
+export type waitlistConfirmOfferEndpointResponses = {
+    /**
+     * Successful Response
+     */
+    201: ReservationPublic;
+};
+
+export type waitlistConfirmOfferEndpointResponse = waitlistConfirmOfferEndpointResponses[keyof waitlistConfirmOfferEndpointResponses];
+
+export type waitlistDeclineOfferEndpointData = {
+    body?: never;
+    path: {
+        /**
+         * Hold Id
+         */
+        hold_id: string;
+    };
+    query?: never;
+    url: '/api/v1/waitlist/offers/{hold_id}/decline';
+};
+
+export type waitlistDeclineOfferEndpointErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type waitlistDeclineOfferEndpointError = waitlistDeclineOfferEndpointErrors[keyof waitlistDeclineOfferEndpointErrors];
+
+export type waitlistDeclineOfferEndpointResponses = {
+    /**
+     * Successful Response
+     */
+    200: WaitlistEntryPublic;
+};
+
+export type waitlistDeclineOfferEndpointResponse = waitlistDeclineOfferEndpointResponses[keyof waitlistDeclineOfferEndpointResponses];
+
+export type waitlistReadOrganizationWaitlistData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Org Id
+         */
+        org_id: string;
+        /**
+         * Status
+         */
+        status?: string | null;
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Page Size
+         */
+        page_size?: number;
+    };
+    url: '/api/v1/admin/waitlist';
+};
+
+export type waitlistReadOrganizationWaitlistErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type waitlistReadOrganizationWaitlistError = waitlistReadOrganizationWaitlistErrors[keyof waitlistReadOrganizationWaitlistErrors];
+
+export type waitlistReadOrganizationWaitlistResponses = {
+    /**
+     * Successful Response
+     */
+    200: WaitlistPublic;
+};
+
+export type waitlistReadOrganizationWaitlistResponse = waitlistReadOrganizationWaitlistResponses[keyof waitlistReadOrganizationWaitlistResponses];
+
+export type schedulingMatchResourceEndpointData = {
+    body: ResourceMatchRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/scheduling/match';
+};
+
+export type schedulingMatchResourceEndpointErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type schedulingMatchResourceEndpointError = schedulingMatchResourceEndpointErrors[keyof schedulingMatchResourceEndpointErrors];
+
+export type schedulingMatchResourceEndpointResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResourceMatchPublic;
+};
+
+export type schedulingMatchResourceEndpointResponse = schedulingMatchResourceEndpointResponses[keyof schedulingMatchResourceEndpointResponses];
+
+export type schedulingResourceAlternativesEndpointData = {
+    body?: never;
+    path: {
+        /**
+         * Resource Id
+         */
+        resource_id: string;
+    };
+    query: {
+        /**
+         * Start At
+         */
+        start_at: string;
+        /**
+         * End At
+         */
+        end_at: string;
+    };
+    url: '/api/v1/resources/{resource_id}/alternatives';
+};
+
+export type schedulingResourceAlternativesEndpointErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type schedulingResourceAlternativesEndpointError = schedulingResourceAlternativesEndpointErrors[keyof schedulingResourceAlternativesEndpointErrors];
+
+export type schedulingResourceAlternativesEndpointResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlternativesPublic;
+};
+
+export type schedulingResourceAlternativesEndpointResponse = schedulingResourceAlternativesEndpointResponses[keyof schedulingResourceAlternativesEndpointResponses];
+
+export type notificationsReadNotificationsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Unread Only
+         */
+        unread_only?: boolean;
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Page Size
+         */
+        page_size?: number;
+    };
+    url: '/api/v1/notifications';
+};
+
+export type notificationsReadNotificationsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type notificationsReadNotificationsError = notificationsReadNotificationsErrors[keyof notificationsReadNotificationsErrors];
+
+export type notificationsReadNotificationsResponses = {
+    /**
+     * Successful Response
+     */
+    200: NotificationsPublic;
+};
+
+export type notificationsReadNotificationsResponse = notificationsReadNotificationsResponses[keyof notificationsReadNotificationsResponses];
+
+export type notificationsMarkAllNotificationsReadData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notifications/read-all';
+};
+
+export type notificationsMarkAllNotificationsReadResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type notificationsMarkAllNotificationsReadResponse = notificationsMarkAllNotificationsReadResponses[keyof notificationsMarkAllNotificationsReadResponses];
+
+export type notificationsMarkNotificationReadData = {
+    body?: never;
+    path: {
+        /**
+         * Notification Id
+         */
+        notification_id: string;
+    };
+    query?: never;
+    url: '/api/v1/notifications/{notification_id}/read';
+};
+
+export type notificationsMarkNotificationReadErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type notificationsMarkNotificationReadError = notificationsMarkNotificationReadErrors[keyof notificationsMarkNotificationReadErrors];
+
+export type notificationsMarkNotificationReadResponses = {
+    /**
+     * Successful Response
+     */
+    200: NotificationPublic;
+};
+
+export type notificationsMarkNotificationReadResponse = notificationsMarkNotificationReadResponses[keyof notificationsMarkNotificationReadResponses];
+
+export type operationsReadOperationsMetricsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/operations/metrics';
+};
+
+export type operationsReadOperationsMetricsResponses = {
+    /**
+     * Successful Response
+     */
+    200: OperationsMetricsPublic;
+};
+
+export type operationsReadOperationsMetricsResponse = operationsReadOperationsMetricsResponses[keyof operationsReadOperationsMetricsResponses];
+
+export type operationsReadFailedOutboxEventsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Page Size
+         */
+        page_size?: number;
+    };
+    url: '/api/v1/operations/outbox/failed';
+};
+
+export type operationsReadFailedOutboxEventsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type operationsReadFailedOutboxEventsError = operationsReadFailedOutboxEventsErrors[keyof operationsReadFailedOutboxEventsErrors];
+
+export type operationsReadFailedOutboxEventsResponses = {
+    /**
+     * Successful Response
+     */
+    200: OutboxEventsPublic;
+};
+
+export type operationsReadFailedOutboxEventsResponse = operationsReadFailedOutboxEventsResponses[keyof operationsReadFailedOutboxEventsResponses];
+
+export type operationsRetryFailedOutboxEventData = {
+    body?: never;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/api/v1/operations/outbox/{event_id}/retry';
+};
+
+export type operationsRetryFailedOutboxEventErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type operationsRetryFailedOutboxEventError = operationsRetryFailedOutboxEventErrors[keyof operationsRetryFailedOutboxEventErrors];
+
+export type operationsRetryFailedOutboxEventResponses = {
+    /**
+     * Successful Response
+     */
+    200: OutboxEventPublic;
+};
+
+export type operationsRetryFailedOutboxEventResponse = operationsRetryFailedOutboxEventResponses[keyof operationsRetryFailedOutboxEventResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;

@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, organizationsAddMemberData, organizationsAddMemberErrors, organizationsAddMemberResponses, organizationsCreateOrganizationData, organizationsCreateOrganizationErrors, organizationsCreateOrganizationResponses, organizationsReadDashboardData, organizationsReadDashboardErrors, organizationsReadDashboardResponses, organizationsReadMembersData, organizationsReadMembersErrors, organizationsReadMembersResponses, organizationsReadMyOrganizationsData, organizationsReadMyOrganizationsResponses, organizationsRemoveMemberData, organizationsRemoveMemberErrors, organizationsRemoveMemberResponses, organizationsUpdateMemberRoleData, organizationsUpdateMemberRoleErrors, organizationsUpdateMemberRoleResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, reservationsCancelReservationEndpointData, reservationsCancelReservationEndpointErrors, reservationsCancelReservationEndpointResponses, reservationsCreateReservationEndpointData, reservationsCreateReservationEndpointErrors, reservationsCreateReservationEndpointResponses, reservationsReadMyReservationsData, reservationsReadMyReservationsErrors, reservationsReadMyReservationsResponses, reservationsReadOrganizationReservationsData, reservationsReadOrganizationReservationsErrors, reservationsReadOrganizationReservationsResponses, reservationsReadReservationData, reservationsReadReservationErrors, reservationsReadReservationResponses, resourcesCreateBlackoutData, resourcesCreateBlackoutErrors, resourcesCreateBlackoutResponses, resourcesCreateResourceData, resourcesCreateResourceErrors, resourcesCreateResourceResponses, resourcesReadAvailabilityData, resourcesReadAvailabilityErrors, resourcesReadAvailabilityResponses, resourcesReadBlackoutsData, resourcesReadBlackoutsErrors, resourcesReadBlackoutsResponses, resourcesReadOpeningRulesData, resourcesReadOpeningRulesErrors, resourcesReadOpeningRulesResponses, resourcesReadResourceData, resourcesReadResourceErrors, resourcesReadResourceResponses, resourcesReadResourcesData, resourcesReadResourcesErrors, resourcesReadResourcesResponses, resourcesReplaceOpeningRulesData, resourcesReplaceOpeningRulesErrors, resourcesReplaceOpeningRulesResponses, resourcesUpdateResourceData, resourcesUpdateResourceErrors, resourcesUpdateResourceResponses, sitesCreateSiteData, sitesCreateSiteErrors, sitesCreateSiteResponses, sitesReadSitesData, sitesReadSitesErrors, sitesReadSitesResponses, sitesUpdateSiteData, sitesUpdateSiteErrors, sitesUpdateSiteResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, notificationsMarkAllNotificationsReadData, notificationsMarkAllNotificationsReadResponses, notificationsMarkNotificationReadData, notificationsMarkNotificationReadErrors, notificationsMarkNotificationReadResponses, notificationsReadNotificationsData, notificationsReadNotificationsErrors, notificationsReadNotificationsResponses, operationsReadFailedOutboxEventsData, operationsReadFailedOutboxEventsErrors, operationsReadFailedOutboxEventsResponses, operationsReadOperationsMetricsData, operationsReadOperationsMetricsResponses, operationsRetryFailedOutboxEventData, operationsRetryFailedOutboxEventErrors, operationsRetryFailedOutboxEventResponses, organizationsAddMemberData, organizationsAddMemberErrors, organizationsAddMemberResponses, organizationsCreateOrganizationData, organizationsCreateOrganizationErrors, organizationsCreateOrganizationResponses, organizationsReadDashboardData, organizationsReadDashboardErrors, organizationsReadDashboardResponses, organizationsReadMembersData, organizationsReadMembersErrors, organizationsReadMembersResponses, organizationsReadMyOrganizationsData, organizationsReadMyOrganizationsResponses, organizationsRemoveMemberData, organizationsRemoveMemberErrors, organizationsRemoveMemberResponses, organizationsUpdateMemberRoleData, organizationsUpdateMemberRoleErrors, organizationsUpdateMemberRoleResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, reservationsCancelReservationEndpointData, reservationsCancelReservationEndpointErrors, reservationsCancelReservationEndpointResponses, reservationsCreateReservationEndpointData, reservationsCreateReservationEndpointErrors, reservationsCreateReservationEndpointResponses, reservationsReadMyReservationsData, reservationsReadMyReservationsErrors, reservationsReadMyReservationsResponses, reservationsReadOrganizationReservationsData, reservationsReadOrganizationReservationsErrors, reservationsReadOrganizationReservationsResponses, reservationsReadReservationData, reservationsReadReservationErrors, reservationsReadReservationResponses, resourcesCreateBlackoutData, resourcesCreateBlackoutErrors, resourcesCreateBlackoutResponses, resourcesCreateResourceData, resourcesCreateResourceErrors, resourcesCreateResourceResponses, resourcesReadAvailabilityData, resourcesReadAvailabilityErrors, resourcesReadAvailabilityResponses, resourcesReadBlackoutsData, resourcesReadBlackoutsErrors, resourcesReadBlackoutsResponses, resourcesReadOpeningRulesData, resourcesReadOpeningRulesErrors, resourcesReadOpeningRulesResponses, resourcesReadResourceData, resourcesReadResourceErrors, resourcesReadResourceResponses, resourcesReadResourcesData, resourcesReadResourcesErrors, resourcesReadResourcesResponses, resourcesReplaceOpeningRulesData, resourcesReplaceOpeningRulesErrors, resourcesReplaceOpeningRulesResponses, resourcesUpdateResourceData, resourcesUpdateResourceErrors, resourcesUpdateResourceResponses, schedulingMatchResourceEndpointData, schedulingMatchResourceEndpointErrors, schedulingMatchResourceEndpointResponses, schedulingResourceAlternativesEndpointData, schedulingResourceAlternativesEndpointErrors, schedulingResourceAlternativesEndpointResponses, sitesCreateSiteData, sitesCreateSiteErrors, sitesCreateSiteResponses, sitesReadSitesData, sitesReadSitesErrors, sitesReadSitesResponses, sitesUpdateSiteData, sitesUpdateSiteErrors, sitesUpdateSiteResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses, waitlistConfirmOfferEndpointData, waitlistConfirmOfferEndpointErrors, waitlistConfirmOfferEndpointResponses, waitlistDeclineOfferEndpointData, waitlistDeclineOfferEndpointErrors, waitlistDeclineOfferEndpointResponses, waitlistJoinWaitlistEndpointData, waitlistJoinWaitlistEndpointErrors, waitlistJoinWaitlistEndpointResponses, waitlistLeaveWaitlistEndpointData, waitlistLeaveWaitlistEndpointErrors, waitlistLeaveWaitlistEndpointResponses, waitlistReadMyWaitlistData, waitlistReadMyWaitlistErrors, waitlistReadMyWaitlistResponses, waitlistReadOfferData, waitlistReadOfferErrors, waitlistReadOfferResponses, waitlistReadOrganizationWaitlistData, waitlistReadOrganizationWaitlistErrors, waitlistReadOrganizationWaitlistResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -618,6 +618,202 @@ export class ReservationsService {
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/reservations/{reservation_id}/cancel',
+            ...options
+        });
+    }
+}
+
+export class WaitlistService {
+    /**
+     * Join Waitlist Endpoint
+     */
+    public static joinWaitlistEndpoint<ThrowOnError extends boolean = true>(options: Options<waitlistJoinWaitlistEndpointData, ThrowOnError>) {
+        return (options.client ?? client).post<waitlistJoinWaitlistEndpointResponses, waitlistJoinWaitlistEndpointErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/waitlist',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read My Waitlist
+     */
+    public static readMyWaitlist<ThrowOnError extends boolean = true>(options?: Options<waitlistReadMyWaitlistData, ThrowOnError>) {
+        return (options?.client ?? client).get<waitlistReadMyWaitlistResponses, waitlistReadMyWaitlistErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/waitlist/me',
+            ...options
+        });
+    }
+    
+    /**
+     * Leave Waitlist Endpoint
+     */
+    public static leaveWaitlistEndpoint<ThrowOnError extends boolean = true>(options: Options<waitlistLeaveWaitlistEndpointData, ThrowOnError>) {
+        return (options.client ?? client).delete<waitlistLeaveWaitlistEndpointResponses, waitlistLeaveWaitlistEndpointErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/waitlist/{entry_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Offer
+     */
+    public static readOffer<ThrowOnError extends boolean = true>(options: Options<waitlistReadOfferData, ThrowOnError>) {
+        return (options.client ?? client).get<waitlistReadOfferResponses, waitlistReadOfferErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/waitlist/offers/{hold_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Confirm Offer Endpoint
+     */
+    public static confirmOfferEndpoint<ThrowOnError extends boolean = true>(options: Options<waitlistConfirmOfferEndpointData, ThrowOnError>) {
+        return (options.client ?? client).post<waitlistConfirmOfferEndpointResponses, waitlistConfirmOfferEndpointErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/waitlist/offers/{hold_id}/confirm',
+            ...options
+        });
+    }
+    
+    /**
+     * Decline Offer Endpoint
+     */
+    public static declineOfferEndpoint<ThrowOnError extends boolean = true>(options: Options<waitlistDeclineOfferEndpointData, ThrowOnError>) {
+        return (options.client ?? client).post<waitlistDeclineOfferEndpointResponses, waitlistDeclineOfferEndpointErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/waitlist/offers/{hold_id}/decline',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Organization Waitlist
+     */
+    public static readOrganizationWaitlist<ThrowOnError extends boolean = true>(options: Options<waitlistReadOrganizationWaitlistData, ThrowOnError>) {
+        return (options.client ?? client).get<waitlistReadOrganizationWaitlistResponses, waitlistReadOrganizationWaitlistErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/admin/waitlist',
+            ...options
+        });
+    }
+}
+
+export class SchedulingService {
+    /**
+     * Match Resource Endpoint
+     */
+    public static matchResourceEndpoint<ThrowOnError extends boolean = true>(options: Options<schedulingMatchResourceEndpointData, ThrowOnError>) {
+        return (options.client ?? client).post<schedulingMatchResourceEndpointResponses, schedulingMatchResourceEndpointErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/scheduling/match',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Resource Alternatives Endpoint
+     */
+    public static resourceAlternativesEndpoint<ThrowOnError extends boolean = true>(options: Options<schedulingResourceAlternativesEndpointData, ThrowOnError>) {
+        return (options.client ?? client).get<schedulingResourceAlternativesEndpointResponses, schedulingResourceAlternativesEndpointErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/resources/{resource_id}/alternatives',
+            ...options
+        });
+    }
+}
+
+export class NotificationsService {
+    /**
+     * Read Notifications
+     */
+    public static readNotifications<ThrowOnError extends boolean = true>(options?: Options<notificationsReadNotificationsData, ThrowOnError>) {
+        return (options?.client ?? client).get<notificationsReadNotificationsResponses, notificationsReadNotificationsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/notifications',
+            ...options
+        });
+    }
+    
+    /**
+     * Mark All Notifications Read
+     */
+    public static markAllNotificationsRead<ThrowOnError extends boolean = true>(options?: Options<notificationsMarkAllNotificationsReadData, ThrowOnError>) {
+        return (options?.client ?? client).post<notificationsMarkAllNotificationsReadResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/notifications/read-all',
+            ...options
+        });
+    }
+    
+    /**
+     * Mark Notification Read
+     */
+    public static markNotificationRead<ThrowOnError extends boolean = true>(options: Options<notificationsMarkNotificationReadData, ThrowOnError>) {
+        return (options.client ?? client).post<notificationsMarkNotificationReadResponses, notificationsMarkNotificationReadErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/notifications/{notification_id}/read',
+            ...options
+        });
+    }
+}
+
+export class OperationsService {
+    /**
+     * Read Operations Metrics
+     */
+    public static readOperationsMetrics<ThrowOnError extends boolean = true>(options?: Options<operationsReadOperationsMetricsData, ThrowOnError>) {
+        return (options?.client ?? client).get<operationsReadOperationsMetricsResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/operations/metrics',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Failed Outbox Events
+     */
+    public static readFailedOutboxEvents<ThrowOnError extends boolean = true>(options?: Options<operationsReadFailedOutboxEventsData, ThrowOnError>) {
+        return (options?.client ?? client).get<operationsReadFailedOutboxEventsResponses, operationsReadFailedOutboxEventsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/operations/outbox/failed',
+            ...options
+        });
+    }
+    
+    /**
+     * Retry Failed Outbox Event
+     */
+    public static retryFailedOutboxEvent<ThrowOnError extends boolean = true>(options: Options<operationsRetryFailedOutboxEventData, ThrowOnError>) {
+        return (options.client ?? client).post<operationsRetryFailedOutboxEventResponses, operationsRetryFailedOutboxEventErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/operations/outbox/{event_id}/retry',
             ...options
         });
     }

@@ -1,0 +1,50 @@
+{
+  "generated_at": "2026-10-28T11:45:54.1727912+08:00",
+  "environment": {
+    "os": "Windows",
+    "mysql": "8.4.13 (docker, host port 3307)",
+    "redis": "7.4.12 (docker, host port 6380)",
+    "api_mode": "fastapi run (production, single worker per instance)",
+    "cache_measurement": "cold availability keys after a 5s DB-warmup run",
+    "seed": "../docs/v2/performance/seed.json",
+    "resources": 20
+  },
+  "results": [
+    {
+      "label": "availability-no-cache",
+      "base_url": "http://127.0.0.1:8002",
+      "users": 10,
+      "duration_seconds": 20,
+      "requests": 678,
+      "failures": 0,
+      "requests_per_second": 35.41,
+      "avg_ms": 20,
+      "p50_ms": 16,
+      "p95_ms": 40,
+      "p99_ms": 74,
+      "max_ms": 160,
+      "mysql_com_select": 4876,
+      "cache_hits": 0,
+      "cache_misses": 0,
+      "cache_hit_rate": null
+    },
+    {
+      "label": "availability-cache",
+      "base_url": "http://127.0.0.1:8003",
+      "users": 10,
+      "duration_seconds": 20,
+      "requests": 698,
+      "failures": 0,
+      "requests_per_second": 36.53,
+      "avg_ms": 13,
+      "p50_ms": 12,
+      "p95_ms": 22,
+      "p99_ms": 44,
+      "max_ms": 92,
+      "mysql_com_select": 2939,
+      "cache_hits": 697,
+      "cache_misses": 22,
+      "cache_hit_rate": 0.9694
+    }
+  ]
+}

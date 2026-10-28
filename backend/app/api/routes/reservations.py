@@ -6,7 +6,9 @@ from sqlalchemy import func
 from sqlmodel import select
 
 from app.api.deps import CurrentUser, SessionDep, require_org
+from app.core.config import settings
 from app.core.errors import api_error
+from app.core.ratelimit import rate_limit
 from app.core.time import to_db, utcnow
 from app.models import OrgRole, Reservation, ReservationStatus, User
 from app.schemas import (
@@ -31,7 +33,21 @@ from app.services.reservations import (
 router = APIRouter(prefix="/reservations", tags=["reservations"])
 
 
-@router.post("", response_model=ReservationPublic, status_code=201)
+@router.post(
+    "",
+    response_model=ReservationPublic,
+    status_code=201,
+    dependencies=[
+        Depends(
+            rate_limit(
+                "reservation-create",
+                settings.RATE_LIMIT_BOOKING_CAPACITY,
+                settings.RATE_LIMIT_BOOKING_REFILL_PER_MINUTE,
+                fail_closed=True,
+            )
+        )
+    ],
+)
 def create_reservation_endpoint(
     *,
     session: SessionDep,

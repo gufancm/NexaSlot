@@ -8,6 +8,7 @@ from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlmodel import Session, select
 
+from app.cache.availability import invalidate_resource
 from app.core.config import settings
 from app.core.db import engine
 from app.core.errors import api_error
@@ -26,8 +27,10 @@ from app.models import (
     db_now,
 )
 from app.schemas import ErrorCode, ReservationCreate, ReservationPublic
+from app.services.allocation import allocate_next_hold, lock_resource
 from app.services.audit import record_audit
 from app.services.orgs import require_org_access
+from app.services.outbox import enqueue, notification_payload
 from app.services.slots import SLOT_MINUTES, ensure_range_slots
 
 CREATE_OPERATION = "reservation.create"
@@ -46,7 +49,7 @@ def build_request_hash(payload: ReservationCreate) -> str:
     return hashlib.sha256(canonical.encode()).hexdigest()
 
 
-def _validate_booking_rules(site: Site, start_utc: datetime, end_utc: datetime) -> None:
+def validate_booking_rules(site: Site, start_utc: datetime, end_utc: datetime) -> None:
     duration_minutes = (end_utc - start_utc).total_seconds() / 60
     if duration_minutes < SLOT_MINUTES:
         raise api_error(
@@ -144,6 +147,12 @@ def _assert_slots_bookable(
                 ErrorCode.SLOT_UNAVAILABLE,
                 "One or more slots have already been booked",
             )
+        if slot.current_hold_id is not None:
+            raise api_error(
+                409,
+                ErrorCode.SLOT_UNAVAILABLE,
+                "One or more slots are held for a waitlist offer",
+            )
 
 
 def _reservation_public(db: Session, reservation: Reservation) -> ReservationPublic:
@@ -187,6 +196,11 @@ def _create_once(
     end_utc: datetime,
 ) -> tuple[ReservationPublic, bool]:
     with Session(engine) as db:
+        # Every write path locks the resource row first, then slots in
+        # ascending order. This makes create/cancel/waitlist hand-off
+        # serialise on the same resource instead of deadlocking on slots.
+        locked_resource = lock_resource(db, resource.id)
+        locked_resource_id = locked_resource.id
         existing = db.exec(
             select(IdempotencyRecord)
             .where(
@@ -206,12 +220,12 @@ def _create_once(
             db.rollback()
             return ReservationPublic.model_validate(existing.response), True
 
-        slots = _load_slots_for_update(db, resource.id, start_utc, end_utc)
+        slots = _load_slots_for_update(db, locked_resource.id, start_utc, end_utc)
         _assert_slots_bookable(slots, start_utc, end_utc)
 
         reservation = Reservation(
             organization_id=site.organization_id,
-            resource_id=resource.id,
+            resource_id=locked_resource.id,
             user_id=user.id,
             start_at=to_db(start_utc),
             end_at=to_db(end_utc),
@@ -252,6 +266,22 @@ def _create_once(
             },
         )
 
+        enqueue(
+            db,
+            event_type="reservation.created",
+            aggregate_id=reservation.id,
+            payload=notification_payload(
+                user_id=user.id,
+                organization_id=site.organization_id,
+                title="预约已确认",
+                message=(
+                    f"{locked_resource.name} 已为你保留 "
+                    f"{start_utc.isoformat()} 至 {end_utc.isoformat()}。"
+                ),
+                reservation_id=str(reservation.id),
+            ),
+        )
+
         public = _reservation_public(db, reservation)
         db.add(
             IdempotencyRecord(
@@ -264,7 +294,8 @@ def _create_once(
             )
         )
         db.commit()
-        return public, False
+    invalidate_resource(locked_resource_id)
+    return public, False
 
 
 def create_reservation(
@@ -283,7 +314,7 @@ def create_reservation(
     request_hash = build_request_hash(payload)
     start_utc = as_utc(payload.start_at)
     end_utc = as_utc(payload.end_at)
-    _validate_booking_rules(site, start_utc, end_utc)
+    validate_booking_rules(site, start_utc, end_utc)
 
     # Slots are materialised up front so that the write transaction always
     # locks existing rows instead of racing on inserts.
@@ -340,6 +371,17 @@ def create_reservation(
 
 def cancel_reservation(*, user: User, reservation_id: uuid.UUID) -> ReservationPublic:
     with Session(engine) as db:
+        snapshot = db.get(Reservation, reservation_id)
+        if snapshot is None:
+            raise api_error(
+                404, ErrorCode.RESERVATION_NOT_FOUND, "Reservation not found"
+            )
+        if snapshot.user_id != user.id:
+            require_org_access(db, user, snapshot.organization_id, OrgRole.ORG_ADMIN)
+
+        # Lock order: resource -> reservation/slots -> waitlist/hold.
+        resource = lock_resource(db, snapshot.resource_id)
+        resource_id = resource.id
         reservation = db.exec(
             select(Reservation)
             .where(Reservation.id == reservation_id)
@@ -349,9 +391,6 @@ def cancel_reservation(*, user: User, reservation_id: uuid.UUID) -> ReservationP
             raise api_error(
                 404, ErrorCode.RESERVATION_NOT_FOUND, "Reservation not found"
             )
-
-        if reservation.user_id != user.id:
-            require_org_access(db, user, reservation.organization_id, OrgRole.ORG_ADMIN)
 
         if reservation.status == ReservationStatus.CANCELLED.value:
             return _reservation_public(db, reservation)
@@ -366,16 +405,34 @@ def cancel_reservation(*, user: User, reservation_id: uuid.UUID) -> ReservationP
                 f"{settings.BOOKING_CANCEL_CUTOFF_MINUTES} minutes before the start",
             )
 
-        slots = db.exec(
-            select(ResourceSlot)
-            .where(ResourceSlot.current_reservation_id == reservation.id)
-            .with_for_update()
-        ).all()
+        start_utc = from_db(reservation.start_at) or utcnow()
+        end_utc = from_db(reservation.end_at) or utcnow()
+        slots = list(
+            db.exec(
+                select(ResourceSlot)
+                .where(
+                    ResourceSlot.resource_id == resource.id,
+                    ResourceSlot.start_at >= reservation.start_at,
+                    ResourceSlot.start_at < reservation.end_at,
+                )
+                .order_by(ResourceSlot.start_at)
+                .with_for_update()
+            ).all()
+        )
+        released = 0
         for slot in slots:
-            slot.current_reservation_id = None
+            if slot.current_reservation_id == reservation.id:
+                slot.current_reservation_id = None
+                released += 1
 
         reservation.status = ReservationStatus.CANCELLED.value
         reservation.cancelled_at = db_now()
+
+        # Hand the window to the next matching entry inside this transaction so
+        # a fresh booking cannot slip in between release and offer creation.
+        hold = allocate_next_hold(
+            db, resource=resource, start_at=start_utc, end_at=end_utc
+        )
 
         record_audit(
             db,
@@ -384,10 +441,30 @@ def cancel_reservation(*, user: User, reservation_id: uuid.UUID) -> ReservationP
             action="reservation.cancel",
             target_type="reservation",
             target_id=reservation.id,
-            detail={"released_slots": len(slots)},
+            detail={
+                "released_slots": released,
+                "offered_hold_id": str(hold.id) if hold else None,
+            },
+        )
+        enqueue(
+            db,
+            event_type="reservation.cancelled",
+            aggregate_id=reservation.id,
+            payload=notification_payload(
+                user_id=reservation.user_id,
+                organization_id=reservation.organization_id,
+                title="预约已取消",
+                message=(
+                    f"{resource.name} {start_utc.isoformat()} 的预约已取消，"
+                    "时间片已释放。"
+                ),
+                reservation_id=str(reservation.id),
+            ),
         )
         db.commit()
-        return _reservation_public(db, reservation)
+        public = _reservation_public(db, reservation)
+    invalidate_resource(resource_id)
+    return public
 
 
 def serialize_many(

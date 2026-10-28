@@ -3,12 +3,8 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 import { Building2 } from "lucide-react"
 
 import { Footer } from "@/components/Common/Footer"
+import { NotificationBell } from "@/components/Common/NotificationBell"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
 import {
   Select,
   SelectContent,
@@ -16,6 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
 import { isLoggedIn } from "@/hooks/useAuth"
 import { OrgProvider, useOrg } from "@/hooks/useOrg"
 
@@ -41,6 +42,9 @@ function Layout() {
             <div className="ml-2">
               <OrgSwitcher />
             </div>
+            <div className="ml-auto">
+              <NotificationBell />
+            </div>
           </header>
           <main className="flex-1 p-6 md:p-8">
             <div className="mx-auto max-w-7xl">
@@ -59,7 +63,9 @@ function OrgSwitcher() {
   const queryClient = useQueryClient()
 
   if (organizations.length === 0) {
-    return <span className="text-sm text-muted-foreground">尚未加入任何组织</span>
+    return (
+      <span className="text-sm text-muted-foreground">尚未加入任何组织</span>
+    )
   }
 
   return (

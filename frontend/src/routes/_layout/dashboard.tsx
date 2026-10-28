@@ -110,8 +110,12 @@ function DashboardPage() {
                 <stat.icon className="size-4 text-primary" />
               </CardHeader>
               <CardContent className="px-5 pt-2">
-                <p className="text-3xl font-bold tracking-tight">{stat.value}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{stat.hint}</p>
+                <p className="text-3xl font-bold tracking-tight">
+                  {stat.value}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {stat.hint}
+                </p>
               </CardContent>
             </Card>
           ))}

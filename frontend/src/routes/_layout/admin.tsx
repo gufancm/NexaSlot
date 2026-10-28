@@ -1,12 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import {
-  DoorOpen,
-  MapPinned,
-  Plus,
-  TicketCheck,
-  Trash2,
-} from "lucide-react"
+import { DoorOpen, MapPinned, Plus, TicketCheck, Trash2 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
 import {
@@ -15,6 +9,7 @@ import {
   ReservationsService,
   ResourcesService,
   SitesService,
+  WaitlistService,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,7 +44,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import useCustomToast from "@/hooks/useCustomToast"
 import { useOrg } from "@/hooks/useOrg"
-import { formatRange } from "@/lib/datetime"
+import { formatDateTime, formatRange } from "@/lib/datetime"
 import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/_layout/admin")({
@@ -98,6 +93,7 @@ function AdminPage() {
           <TabsTrigger value="sites">场地</TabsTrigger>
           <TabsTrigger value="rules">开放时间</TabsTrigger>
           <TabsTrigger value="reservations">预约记录</TabsTrigger>
+          <TabsTrigger value="waitlist">候补队列</TabsTrigger>
           {isAdmin ? <TabsTrigger value="members">成员</TabsTrigger> : null}
         </TabsList>
 
@@ -112,6 +108,9 @@ function AdminPage() {
         </TabsContent>
         <TabsContent value="reservations" className="mt-4">
           <ReservationsTab orgId={currentOrgId} />
+        </TabsContent>
+        <TabsContent value="waitlist" className="mt-4">
+          <WaitlistTab orgId={currentOrgId} />
         </TabsContent>
         {isAdmin ? (
           <TabsContent value="members" className="mt-4">
@@ -187,7 +186,9 @@ function SitesTab({ orgId }: { orgId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">共 {sites.length} 个场地</p>
+        <p className="text-sm text-muted-foreground">
+          共 {sites.length} 个场地
+        </p>
         <Button onClick={() => setOpen(true)}>
           <Plus className="mr-2 size-4" />
           新建场地
@@ -226,7 +227,9 @@ function SitesTab({ orgId }: { orgId: string }) {
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={site.status === "ACTIVE" ? "default" : "secondary"}
+                      variant={
+                        site.status === "ACTIVE" ? "default" : "secondary"
+                      }
                     >
                       {site.status === "ACTIVE" ? "启用" : "停用"}
                     </Badge>
@@ -333,7 +336,8 @@ function ResourcesTab({ orgId }: { orgId: string }) {
   })
 
   const activeSites = useMemo(
-    () => (sitesQuery.data?.data ?? []).filter((site) => site.status === "ACTIVE"),
+    () =>
+      (sitesQuery.data?.data ?? []).filter((site) => site.status === "ACTIVE"),
     [sitesQuery.data],
   )
 
@@ -455,7 +459,9 @@ function ResourcesTab({ orgId }: { orgId: string }) {
                         toggleMutation.mutate({
                           resourceId: resource.id,
                           status:
-                            resource.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+                            resource.status === "ACTIVE"
+                              ? "INACTIVE"
+                              : "ACTIVE",
                         })
                       }
                     >
@@ -839,7 +845,8 @@ function MembersTab({ orgId }: { orgId: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["members", orgId],
     queryFn: async () =>
-      (await OrganizationsService.readMembers({ path: { org_id: orgId } })).data,
+      (await OrganizationsService.readMembers({ path: { org_id: orgId } }))
+        .data,
   })
 
   const addMutation = useMutation({
@@ -892,7 +899,9 @@ function MembersTab({ orgId }: { orgId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">共 {members.length} 位成员</p>
+        <p className="text-sm text-muted-foreground">
+          共 {members.length} 位成员
+        </p>
         <Button onClick={() => setOpen(true)}>
           <Plus className="mr-2 size-4" />
           添加成员
@@ -934,7 +943,9 @@ function MembersTab({ orgId }: { orgId: string }) {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="MEMBER">成员</SelectItem>
-                        <SelectItem value="RESOURCE_MANAGER">资源管理员</SelectItem>
+                        <SelectItem value="RESOURCE_MANAGER">
+                          资源管理员
+                        </SelectItem>
                         <SelectItem value="ORG_ADMIN">组织管理员</SelectItem>
                       </SelectContent>
                     </Select>
@@ -1000,6 +1011,86 @@ function MembersTab({ orgId }: { orgId: string }) {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+const WAITLIST_STATUS_LABEL: Record<string, string> = {
+  WAITING: "排队中",
+  OFFERED: "待确认",
+  CONFIRMED: "已确认",
+  EXPIRED: "已过期",
+  DECLINED: "已拒绝",
+  CANCELLED: "已退出",
+}
+
+function WaitlistTab({ orgId }: { orgId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["waitlist", "org", orgId],
+    queryFn: async () =>
+      (
+        await WaitlistService.readOrganizationWaitlist({
+          query: { org_id: orgId, page: 1, page_size: 100 },
+        })
+      ).data,
+    refetchInterval: 15_000,
+  })
+
+  if (isLoading) {
+    return <Skeleton className="h-48 w-full" />
+  }
+  if ((data?.data.length ?? 0) === 0) {
+    return (
+      <EmptyState
+        icon={<TicketCheck className="size-6" />}
+        title="暂无候补记录"
+        hint="资源时段被占满后，成员可以在资源详情页加入候补。"
+      />
+    )
+  }
+
+  return (
+    <Card>
+      <CardContent className="px-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>成员</TableHead>
+              <TableHead>资源</TableHead>
+              <TableHead>候补时段</TableHead>
+              <TableHead>状态</TableHead>
+              <TableHead>排队</TableHead>
+              <TableHead>确认截止</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data?.data.map((entry) => (
+              <TableRow key={entry.id}>
+                <TableCell className="text-xs">{entry.user_email}</TableCell>
+                <TableCell>{entry.resource_name}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {formatRange(entry.start_at, entry.end_at, entry.timezone)}
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      entry.status === "OFFERED" ? "default" : "secondary"
+                    }
+                  >
+                    {WAITLIST_STATUS_LABEL[entry.status] ?? entry.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>{entry.queue_position ?? "—"}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {entry.hold
+                    ? formatDateTime(entry.hold.expires_at, entry.timezone)
+                    : "—"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   )
 }
 

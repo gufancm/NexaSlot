@@ -29,8 +29,13 @@ export const Route = createFileRoute("/_layout/")({
 const PAGE_SIZE = 9
 
 function ResourceCenter() {
-  const { currentOrg, currentOrgId, organizations, isLoading, canManageResources } =
-    useOrg()
+  const {
+    currentOrg,
+    currentOrgId,
+    organizations,
+    isLoading,
+    canManageResources,
+  } = useOrg()
   const [search, setSearch] = useState("")
   const [query, setQuery] = useState("")
   const [siteId, setSiteId] = useState<string>("all")
