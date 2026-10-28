@@ -10,12 +10,14 @@ interface LogoProps {
   variant?: "full" | "icon" | "responsive"
   className?: string
   asLink?: boolean
+  to?: "/" | "/resources"
 }
 
 export function Logo({
   variant = "full",
   className,
   asLink = true,
+  to = "/",
 }: LogoProps) {
   const { resolvedTheme } = useTheme()
   const fullLogo = resolvedTheme === "dark" ? logoLight : logo
@@ -52,5 +54,5 @@ export function Logo({
     return content
   }
 
-  return <Link to="/">{content}</Link>
+  return <Link to={to}>{content}</Link>
 }

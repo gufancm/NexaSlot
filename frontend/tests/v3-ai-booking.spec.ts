@@ -77,7 +77,7 @@ async function openDialog(
   page: import("@playwright/test").Page,
   orgId: string,
 ) {
-  await page.goto("/")
+  await page.goto("/resources")
   await page.evaluate((id) => {
     localStorage.setItem("nexaslot_org_id", id)
     localStorage.setItem("vite-ui-theme", "light")

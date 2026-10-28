@@ -171,6 +171,10 @@ def get_llm_client() -> LLMClient | None:
     if settings.LLM_PROVIDER == "mock":
         return MockLLMClient()
     if not settings.LLM_API_KEY:
+        logger.warning(
+            "LLM_PROVIDER=openai but LLM_API_KEY is empty; "
+            "AI recommendations will return unavailable"
+        )
         return None
     return OpenAICompatibleLLMClient(
         OpenAICompatibleConfig(

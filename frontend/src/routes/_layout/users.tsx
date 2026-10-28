@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_layout/users")({
   beforeLoad: async () => {
     const { data: user } = await UsersService.readUserMe()
     if (!user.is_superuser) {
-      throw redirect({ to: "/" })
+      throw redirect({ to: "/resources" })
     }
   },
   head: () => ({

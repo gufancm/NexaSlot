@@ -68,6 +68,15 @@ function OrgSwitcher() {
     )
   }
 
+  if (organizations.length === 1 && currentOrg) {
+    return (
+      <div className="flex h-9 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm">
+        <Building2 className="size-4 text-muted-foreground" />
+        <span className="font-medium">{currentOrg.name}</span>
+      </div>
+    )
+  }
+
   return (
     <Select
       value={currentOrgId ?? undefined}

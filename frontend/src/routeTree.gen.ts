@@ -9,22 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
-import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutDashboardRouteImport } from './routes/_layout/dashboard'
 import { Route as LayoutMatchRouteImport } from './routes/_layout/match'
 import { Route as LayoutNotificationsRouteImport } from './routes/_layout/notifications'
 import { Route as LayoutReservationsRouteImport } from './routes/_layout/reservations'
+import { Route as LayoutResourcesRouteImport } from './routes/_layout/resources'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutUsersRouteImport } from './routes/_layout/users'
 import { Route as LayoutWaitlistRouteImport } from './routes/_layout/waitlist'
+import { Route as LayoutResourcesIndexRouteImport } from './routes/_layout/resources.index'
 import { Route as LayoutResourcesResourceIdRouteImport } from './routes/_layout/resources.$resourceId'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => rootRouteImport,
@@ -48,11 +55,6 @@ const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
   getParentRoute: () => rootRouteImport,
-} as any)
-const LayoutIndexRoute = LayoutIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutAdminRoute = LayoutAdminRouteImport.update({
   id: '/admin',
@@ -79,6 +81,11 @@ const LayoutReservationsRoute = LayoutReservationsRouteImport.update({
   path: '/reservations',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutResourcesRoute = LayoutResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -94,15 +101,20 @@ const LayoutWaitlistRoute = LayoutWaitlistRouteImport.update({
   path: '/waitlist',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutResourcesIndexRoute = LayoutResourcesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LayoutResourcesRoute,
+} as any)
 const LayoutResourcesResourceIdRoute =
   LayoutResourcesResourceIdRouteImport.update({
-    id: '/resources/$resourceId',
-    path: '/resources/$resourceId',
-    getParentRoute: () => LayoutRoute,
+    id: '/$resourceId',
+    path: '/$resourceId',
+    getParentRoute: () => LayoutResourcesRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof LayoutIndexRoute
+  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -112,12 +124,15 @@ export interface FileRoutesByFullPath {
   '/match': typeof LayoutMatchRoute
   '/notifications': typeof LayoutNotificationsRoute
   '/reservations': typeof LayoutReservationsRoute
+  '/resources': typeof LayoutResourcesRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/users': typeof LayoutUsersRoute
   '/waitlist': typeof LayoutWaitlistRoute
   '/resources/$resourceId': typeof LayoutResourcesResourceIdRoute
+  '/resources/': typeof LayoutResourcesIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -130,11 +145,12 @@ export interface FileRoutesByTo {
   '/settings': typeof LayoutSettingsRoute
   '/users': typeof LayoutUsersRoute
   '/waitlist': typeof LayoutWaitlistRoute
-  '/': typeof LayoutIndexRoute
   '/resources/$resourceId': typeof LayoutResourcesResourceIdRoute
+  '/resources': typeof LayoutResourcesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/_layout': typeof LayoutRouteWithChildren
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
@@ -145,11 +161,12 @@ export interface FileRoutesById {
   '/_layout/match': typeof LayoutMatchRoute
   '/_layout/notifications': typeof LayoutNotificationsRoute
   '/_layout/reservations': typeof LayoutReservationsRoute
+  '/_layout/resources': typeof LayoutResourcesRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/users': typeof LayoutUsersRoute
   '/_layout/waitlist': typeof LayoutWaitlistRoute
-  '/_layout/': typeof LayoutIndexRoute
   '/_layout/resources/$resourceId': typeof LayoutResourcesResourceIdRoute
+  '/_layout/resources/': typeof LayoutResourcesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -164,12 +181,15 @@ export interface FileRouteTypes {
     | '/match'
     | '/notifications'
     | '/reservations'
+    | '/resources'
     | '/settings'
     | '/users'
     | '/waitlist'
     | '/resources/$resourceId'
+    | '/resources/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/login'
     | '/recover-password'
     | '/reset-password'
@@ -182,10 +202,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/users'
     | '/waitlist'
-    | '/'
     | '/resources/$resourceId'
+    | '/resources'
   id:
     | '__root__'
+    | '/'
     | '/_layout'
     | '/login'
     | '/recover-password'
@@ -196,14 +217,16 @@ export interface FileRouteTypes {
     | '/_layout/match'
     | '/_layout/notifications'
     | '/_layout/reservations'
+    | '/_layout/resources'
     | '/_layout/settings'
     | '/_layout/users'
     | '/_layout/waitlist'
-    | '/_layout/'
     | '/_layout/resources/$resourceId'
+    | '/_layout/resources/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   LayoutRoute: typeof LayoutRouteWithChildren
   LoginRoute: typeof LoginRoute
   RecoverPasswordRoute: typeof RecoverPasswordRoute
@@ -213,6 +236,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_layout': {
       id: '/_layout'
       path: ''
@@ -247,13 +277,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_layout/': {
-      id: '/_layout/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof LayoutIndexRouteImport
-      parentRoute: typeof LayoutRoute
     }
     '/_layout/admin': {
       id: '/_layout/admin'
@@ -290,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutReservationsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/resources': {
+      id: '/_layout/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof LayoutResourcesRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
@@ -311,15 +341,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutWaitlistRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/resources/': {
+      id: '/_layout/resources/'
+      path: '/'
+      fullPath: '/resources/'
+      preLoaderRoute: typeof LayoutResourcesIndexRouteImport
+      parentRoute: typeof LayoutResourcesRoute
+    }
     '/_layout/resources/$resourceId': {
       id: '/_layout/resources/$resourceId'
-      path: '/resources/$resourceId'
+      path: '/$resourceId'
       fullPath: '/resources/$resourceId'
       preLoaderRoute: typeof LayoutResourcesResourceIdRouteImport
-      parentRoute: typeof LayoutRoute
+      parentRoute: typeof LayoutResourcesRoute
     }
   }
 }
+
+interface LayoutResourcesRouteChildren {
+  LayoutResourcesResourceIdRoute: typeof LayoutResourcesResourceIdRoute
+  LayoutResourcesIndexRoute: typeof LayoutResourcesIndexRoute
+}
+
+const LayoutResourcesRouteChildren: LayoutResourcesRouteChildren = {
+  LayoutResourcesResourceIdRoute: LayoutResourcesResourceIdRoute,
+  LayoutResourcesIndexRoute: LayoutResourcesIndexRoute,
+}
+
+const LayoutResourcesRouteWithChildren = LayoutResourcesRoute._addFileChildren(
+  LayoutResourcesRouteChildren,
+)
 
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
@@ -327,11 +378,10 @@ interface LayoutRouteChildren {
   LayoutMatchRoute: typeof LayoutMatchRoute
   LayoutNotificationsRoute: typeof LayoutNotificationsRoute
   LayoutReservationsRoute: typeof LayoutReservationsRoute
+  LayoutResourcesRoute: typeof LayoutResourcesRouteWithChildren
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutUsersRoute: typeof LayoutUsersRoute
   LayoutWaitlistRoute: typeof LayoutWaitlistRoute
-  LayoutIndexRoute: typeof LayoutIndexRoute
-  LayoutResourcesResourceIdRoute: typeof LayoutResourcesResourceIdRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -340,17 +390,17 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutMatchRoute: LayoutMatchRoute,
   LayoutNotificationsRoute: LayoutNotificationsRoute,
   LayoutReservationsRoute: LayoutReservationsRoute,
+  LayoutResourcesRoute: LayoutResourcesRouteWithChildren,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutUsersRoute: LayoutUsersRoute,
   LayoutWaitlistRoute: LayoutWaitlistRoute,
-  LayoutIndexRoute: LayoutIndexRoute,
-  LayoutResourcesResourceIdRoute: LayoutResourcesResourceIdRoute,
 }
 
 const LayoutRouteWithChildren =
   LayoutRoute._addFileChildren(LayoutRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   LayoutRoute: LayoutRouteWithChildren,
   LoginRoute: LoginRoute,
   RecoverPasswordRoute: RecoverPasswordRoute,

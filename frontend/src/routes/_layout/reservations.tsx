@@ -87,7 +87,7 @@ function MyReservationsPage() {
               去资源中心挑选一个时间和会议室吧。
             </p>
             <Button asChild variant="outline">
-              <Link to="/">浏览资源</Link>
+              <Link to="/resources">浏览资源</Link>
             </Button>
           </CardContent>
         </Card>

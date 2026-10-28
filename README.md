@@ -221,6 +221,14 @@ $env:PLAYWRIGHT_CHANNEL='chrome'
 bunx playwright test tests/v3-ai-booking.spec.ts --reporter=line
 ```
 
+本地测试会写入 `.env` 指向的数据库。清理测试组织/账号（保留“NexaSlot 演示组织”和超级管理员）：
+
+```powershell
+cd backend
+uv run python scripts/cleanup_test_data.py          # 预览
+uv run python scripts/cleanup_test_data.py --yes    # 执行，先自行备份
+```
+
 前端类型检查与构建：
 
 ```bash

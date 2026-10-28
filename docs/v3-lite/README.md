@@ -40,6 +40,15 @@ LLM_MAX_RETRIES=1
 
 其他配置：`RATE_LIMIT_AI_CAPACITY=5`、`RATE_LIMIT_AI_REFILL_PER_MINUTE=5`。修改 `.env` 后需要重启 API。
 
+填写 Key 后先做一次单请求连通性检查（不会跑 40 条评测，避免多余费用）：
+
+```powershell
+cd backend
+uv run python scripts/check_llm.py
+```
+
+默认模型为 `gpt-4o-mini`；如需更换，修改 `.env` 的 `LLM_MODEL` 并重启 API。
+
 ### 2. 启动
 
 ```powershell

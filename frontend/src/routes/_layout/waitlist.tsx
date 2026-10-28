@@ -134,7 +134,7 @@ function WaitlistPage() {
             <CalendarClock className="size-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">{emptyText}</p>
             <Button asChild variant="outline">
-              <Link to="/">浏览资源</Link>
+              <Link to="/resources">浏览资源</Link>
             </Button>
           </CardContent>
         </Card>

@@ -27,7 +27,7 @@ export function AppSidebar() {
   const { canManageResources, isAdmin } = useOrg()
 
   const items: Item[] = [
-    { icon: LibraryBig, title: "资源中心", path: "/" },
+    { icon: LibraryBig, title: "资源中心", path: "/resources" },
     { icon: Sparkles, title: "智能匹配", path: "/match" },
     { icon: CalendarDays, title: "我的预约", path: "/reservations" },
     { icon: CalendarClock, title: "我的候补", path: "/waitlist" },
@@ -47,7 +47,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="px-4 py-6 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
-        <Logo variant="responsive" />
+        <Logo variant="responsive" to="/resources" />
       </SidebarHeader>
       <SidebarContent>
         <Main items={items} />

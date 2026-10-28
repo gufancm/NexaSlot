@@ -20,7 +20,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { useOrg } from "@/hooks/useOrg"
 
-export const Route = createFileRoute("/_layout/")({
+export const Route = createFileRoute("/_layout/resources/")({
   component: ResourceCenter,
   head: () => ({
     meta: [{ title: "资源中心 - NexaSlot" }],

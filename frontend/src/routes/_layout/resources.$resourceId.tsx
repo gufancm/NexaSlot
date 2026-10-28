@@ -9,7 +9,7 @@ import {
   MapPin,
   Users,
 } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 
 import {
   type ReservationCreate,
@@ -74,6 +74,12 @@ function ResourceDetailPage() {
   const today = todayInTimeZone(timezone)
   const activeDate = date ?? addDays(today, 1)
 
+  const changeDate = (nextDate: string) => {
+    setDate(nextDate)
+    setStartIndex(null)
+    setEndIndex(null)
+  }
+
   const availabilityQuery = useQuery({
     queryKey: ["availability", resourceId, activeDate],
     queryFn: async () =>
@@ -98,11 +104,6 @@ function ResourceDetailPage() {
   })
 
   const slots = availabilityQuery.data?.slots ?? []
-
-  useEffect(() => {
-    setStartIndex(null)
-    setEndIndex(null)
-  }, [])
 
   const selection = useMemo(() => {
     if (startIndex === null || endIndex === null) {
@@ -150,7 +151,7 @@ function ResourceDetailPage() {
     }
     const first = Math.min(startIndex, endIndex)
     const last = Math.max(startIndex, endIndex)
-    if (index === startIndex && index === endIndex) {
+    if (index >= first && index <= last) {
       setStartIndex(null)
       setEndIndex(null)
       return
@@ -240,7 +241,7 @@ function ResourceDetailPage() {
     <div className="flex flex-col gap-6">
       <div>
         <Button variant="ghost" size="sm" asChild className="-ml-2 mb-2">
-          <Link to="/">
+          <Link to="/resources">
             <ArrowLeft className="mr-1 size-4" />
             返回资源中心
           </Link>
@@ -342,7 +343,7 @@ function ResourceDetailPage() {
                   variant="outline"
                   size="icon"
                   disabled={activeDate <= today}
-                  onClick={() => setDate(addDays(activeDate, -1))}
+                  onClick={() => changeDate(addDays(activeDate, -1))}
                 >
                   <ChevronLeft className="size-4" />
                 </Button>
@@ -354,14 +355,14 @@ function ResourceDetailPage() {
                     value={activeDate}
                     min={today}
                     max={addDays(today, 14)}
-                    onChange={(event) => setDate(event.target.value)}
+                    onChange={(event) => changeDate(event.target.value)}
                   />
                 </div>
                 <Button
                   variant="outline"
                   size="icon"
                   disabled={activeDate >= addDays(today, 14)}
-                  onClick={() => setDate(addDays(activeDate, 1))}
+                  onClick={() => changeDate(addDays(activeDate, 1))}
                 >
                   <ChevronRight className="size-4" />
                 </Button>
@@ -396,15 +397,16 @@ function ResourceDetailPage() {
                       className={[
                         "flex flex-col items-center justify-center rounded-lg border px-2 py-2 text-sm transition",
                         selected
-                          ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                          ? "cursor-pointer border-primary bg-primary text-primary-foreground shadow-sm"
                           : disabled
                             ? slot.state === "CLOSED"
                               ? "cursor-not-allowed border-dashed bg-muted/30 text-muted-foreground"
                               : "cursor-not-allowed border-dashed bg-muted/30 text-muted-foreground"
                             : slot.state === "AVAILABLE"
-                              ? "border-border bg-background hover:border-primary/60 hover:bg-primary/5"
-                              : "border-amber-300/70 bg-amber-50/60 text-amber-900 hover:border-amber-500 dark:bg-amber-950/30 dark:text-amber-100",
+                              ? "cursor-pointer border-border bg-background hover:border-primary/60 hover:bg-primary/5"
+                              : "cursor-pointer border-amber-300/70 bg-amber-50/60 text-amber-900 hover:border-amber-500 dark:bg-amber-950/30 dark:text-amber-100",
                       ].join(" ")}
+                      aria-pressed={selected}
                     >
                       <span className="font-medium">
                         {formatTime(slot.start_at, timezone)}
@@ -427,7 +429,7 @@ function ResourceDetailPage() {
             )}
 
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/50 px-4 py-3">
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
                 <Clock className="size-4 text-muted-foreground" />
                 {selection?.start && selection.end ? (
                   <span>
@@ -438,6 +440,11 @@ function ResourceDetailPage() {
                 ) : (
                   <span className="text-muted-foreground">请选择连续时段</span>
                 )}
+                {selection ? (
+                  <span className="text-xs text-muted-foreground">
+                    再次点击已选时段可取消
+                  </span>
+                ) : null}
               </div>
               <LoadingButton
                 loading={createMutation.isPending || waitlistMutation.isPending}
