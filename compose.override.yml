@@ -25,7 +25,11 @@ services:
       - --api.insecure=true
   db:
     ports:
-      - "5433:5432"
+      - "3307:3306"
+
+  redis:
+    ports:
+      - "6380:6379"
 
   adminer:
     ports:

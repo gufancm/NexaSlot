@@ -6,6 +6,13 @@ function extractErrorMessage(err: Error): string {
     if (Array.isArray(errDetail) && errDetail.length > 0) {
       return errDetail[0].msg
     }
+    if (
+      errDetail &&
+      typeof errDetail === "object" &&
+      typeof errDetail.message === "string"
+    ) {
+      return errDetail.message
+    }
     if (typeof errDetail === "string") {
       return errDetail
     }

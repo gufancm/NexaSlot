@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends
 from pydantic.networks import EmailStr
+from sqlalchemy import text
 
-from app.api.deps import get_current_active_superuser
+from app.api.deps import SessionDep, get_current_active_superuser
+from app.core.errors import api_error
+from app.core.redis import ping_redis
 from app.models import Message
+from app.schemas import ErrorCode
 from app.utils import generate_test_email, send_email
 
 router = APIRouter(prefix="/utils", tags=["utils"])
@@ -27,5 +31,16 @@ def test_email(email_to: EmailStr) -> Message:
 
 
 @router.get("/health-check/")
-async def health_check() -> bool:
-    return True
+async def health_check(session: SessionDep) -> dict[str, object]:
+    """Liveness probe: MySQL is required, Redis status is reported as degraded."""
+    try:
+        session.exec(text("SELECT 1"))
+    except Exception:
+        raise api_error(503, ErrorCode.CONFLICT, "Database is unavailable")
+
+    redis_ok = await ping_redis()
+    return {
+        "status": "ok",
+        "database": True,
+        "redis": redis_ok,
+    }

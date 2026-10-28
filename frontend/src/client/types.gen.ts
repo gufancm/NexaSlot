@@ -5,6 +5,76 @@ export type ClientOptions = {
 };
 
 /**
+ * AvailabilityPublic
+ */
+export type AvailabilityPublic = {
+    /**
+     * Resource Id
+     */
+    resource_id: string;
+    /**
+     * Date
+     */
+    date: string;
+    /**
+     * Timezone
+     */
+    timezone: string;
+    /**
+     * Slot Minutes
+     */
+    slot_minutes: number;
+    /**
+     * Slots
+     */
+    slots: Array<SlotPublic>;
+};
+
+/**
+ * BlackoutCreate
+ */
+export type BlackoutCreate = {
+    /**
+     * Start At
+     */
+    start_at: string;
+    /**
+     * End At
+     */
+    end_at: string;
+    /**
+     * Reason
+     */
+    reason?: string | null;
+};
+
+/**
+ * BlackoutPublic
+ */
+export type BlackoutPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Resource Id
+     */
+    resource_id: string;
+    /**
+     * Start At
+     */
+    start_at: string;
+    /**
+     * End At
+     */
+    end_at: string;
+    /**
+     * Reason
+     */
+    reason: string | null;
+};
+
+/**
  * Body_login-login_access_token
  */
 export type Body_login_login_access_token = {
@@ -35,6 +105,36 @@ export type Body_login_login_access_token = {
 };
 
 /**
+ * DashboardPublic
+ */
+export type DashboardPublic = {
+    /**
+     * Reservations Total
+     */
+    reservations_total: number;
+    /**
+     * Reservations Upcoming
+     */
+    reservations_upcoming: number;
+    /**
+     * Reservations Today
+     */
+    reservations_today: number;
+    /**
+     * Resources Total
+     */
+    resources_total: number;
+    /**
+     * Sites Total
+     */
+    sites_total: number;
+    /**
+     * Occupied Slot Ratio
+     */
+    occupied_slot_ratio: number;
+};
+
+/**
  * HTTPValidationError
  */
 export type HTTPValidationError = {
@@ -45,67 +145,63 @@ export type HTTPValidationError = {
 };
 
 /**
- * ItemCreate
+ * MemberAdd
  */
-export type ItemCreate = {
+export type MemberAdd = {
     /**
-     * Title
+     * Email
      */
-    title: string;
+    email: string;
     /**
-     * Description
+     * Role
      */
-    description?: string | null;
+    role?: string;
 };
 
 /**
- * ItemPublic
+ * MemberPublic
  */
-export type ItemPublic = {
+export type MemberPublic = {
     /**
-     * Title
+     * User Id
      */
-    title: string;
+    user_id: string;
     /**
-     * Description
+     * Email
      */
-    description?: string | null;
+    email: string;
     /**
-     * Id
+     * Full Name
      */
-    id: string;
+    full_name: string | null;
     /**
-     * Owner Id
+     * Role
      */
-    owner_id: string;
+    role: string;
     /**
      * Created At
      */
-    created_at?: string | null;
+    created_at: string;
 };
 
 /**
- * ItemUpdate
+ * MemberUpdate
  */
-export type ItemUpdate = {
+export type MemberUpdate = {
     /**
-     * Title
+     * Role
      */
-    title?: string | null;
-    /**
-     * Description
-     */
-    description?: string | null;
+    role: string;
 };
 
 /**
- * ItemsPublic
+ * MembersPublic
  */
-export type ItemsPublic = {
+export type MembersPublic = {
     /**
      * Data
      */
-    data: Array<ItemPublic>;
+    data: Array<MemberPublic>;
     /**
      * Count
      */
@@ -137,6 +233,116 @@ export type NewPassword = {
 };
 
 /**
+ * OpeningRuleCreate
+ */
+export type OpeningRuleCreate = {
+    /**
+     * Weekday
+     */
+    weekday: number;
+    /**
+     * Start Time
+     */
+    start_time: string;
+    /**
+     * End Time
+     */
+    end_time: string;
+};
+
+/**
+ * OpeningRulePublic
+ */
+export type OpeningRulePublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Resource Id
+     */
+    resource_id: string;
+    /**
+     * Weekday
+     */
+    weekday: number;
+    /**
+     * Start Time
+     */
+    start_time: string;
+    /**
+     * End Time
+     */
+    end_time: string;
+};
+
+/**
+ * OpeningRulesPublic
+ */
+export type OpeningRulesPublic = {
+    /**
+     * Data
+     */
+    data: Array<OpeningRulePublic>;
+};
+
+/**
+ * OpeningRulesReplace
+ */
+export type OpeningRulesReplace = {
+    /**
+     * Rules
+     */
+    rules: Array<OpeningRuleCreate>;
+};
+
+/**
+ * OrganizationCreate
+ */
+export type OrganizationCreate = {
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * OrganizationPublic
+ */
+export type OrganizationPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Role
+     */
+    role: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * OrganizationsPublic
+ */
+export type OrganizationsPublic = {
+    /**
+     * Data
+     */
+    data: Array<OrganizationPublic>;
+};
+
+/**
  * PrivateUserCreate
  */
 export type PrivateUserCreate = {
@@ -156,6 +362,330 @@ export type PrivateUserCreate = {
      * Is Verified
      */
     is_verified?: boolean;
+};
+
+/**
+ * ReservationCreate
+ */
+export type ReservationCreate = {
+    /**
+     * Resource Id
+     */
+    resource_id: string;
+    /**
+     * Start At
+     */
+    start_at: string;
+    /**
+     * End At
+     */
+    end_at: string;
+};
+
+/**
+ * ReservationPublic
+ */
+export type ReservationPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Organization Id
+     */
+    organization_id: string;
+    /**
+     * Resource Id
+     */
+    resource_id: string;
+    /**
+     * Resource Name
+     */
+    resource_name: string;
+    /**
+     * Site Name
+     */
+    site_name: string;
+    /**
+     * Timezone
+     */
+    timezone: string;
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * User Email
+     */
+    user_email: string;
+    /**
+     * Start At
+     */
+    start_at: string;
+    /**
+     * End At
+     */
+    end_at: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Can Cancel
+     */
+    can_cancel: boolean;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Cancelled At
+     */
+    cancelled_at: string | null;
+};
+
+/**
+ * ReservationsPublic
+ */
+export type ReservationsPublic = {
+    /**
+     * Data
+     */
+    data: Array<ReservationPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * ResourceCreate
+ */
+export type ResourceCreate = {
+    /**
+     * Site Id
+     */
+    site_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Capacity
+     */
+    capacity?: number;
+    /**
+     * Features
+     */
+    features?: Array<string>;
+};
+
+/**
+ * ResourcePublic
+ */
+export type ResourcePublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Organization Id
+     */
+    organization_id: string;
+    /**
+     * Site Id
+     */
+    site_id: string;
+    /**
+     * Site Name
+     */
+    site_name: string;
+    /**
+     * Timezone
+     */
+    timezone: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description: string | null;
+    /**
+     * Capacity
+     */
+    capacity: number;
+    /**
+     * Features
+     */
+    features: Array<string>;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * ResourceUpdate
+ */
+export type ResourceUpdate = {
+    /**
+     * Site Id
+     */
+    site_id?: string | null;
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Capacity
+     */
+    capacity?: number | null;
+    /**
+     * Features
+     */
+    features?: Array<string> | null;
+    /**
+     * Status
+     */
+    status?: string | null;
+};
+
+/**
+ * ResourcesPublic
+ */
+export type ResourcesPublic = {
+    /**
+     * Data
+     */
+    data: Array<ResourcePublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * SiteCreate
+ */
+export type SiteCreate = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Address
+     */
+    address?: string | null;
+    /**
+     * Timezone
+     */
+    timezone?: string;
+};
+
+/**
+ * SitePublic
+ */
+export type SitePublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Organization Id
+     */
+    organization_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Address
+     */
+    address: string | null;
+    /**
+     * Timezone
+     */
+    timezone: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * SiteUpdate
+ */
+export type SiteUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Address
+     */
+    address?: string | null;
+    /**
+     * Timezone
+     */
+    timezone?: string | null;
+    /**
+     * Status
+     */
+    status?: string | null;
+};
+
+/**
+ * SitesPublic
+ */
+export type SitesPublic = {
+    /**
+     * Data
+     */
+    data: Array<SitePublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * SlotPublic
+ */
+export type SlotPublic = {
+    /**
+     * Start At
+     */
+    start_at: string;
+    /**
+     * End At
+     */
+    end_at: string;
+    /**
+     * State
+     */
+    state: string;
+    /**
+     * Reservation Id
+     */
+    reservation_id?: string | null;
 };
 
 /**
@@ -767,159 +1297,796 @@ export type utilsHealthCheckResponses = {
      *
      * Successful Response
      */
-    200: boolean;
+    200: {
+        [key: string]: unknown;
+    };
 };
 
 export type utilsHealthCheckResponse = utilsHealthCheckResponses[keyof utilsHealthCheckResponses];
 
-export type itemsReadItemsData = {
+export type organizationsReadMyOrganizationsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/me';
+};
+
+export type organizationsReadMyOrganizationsResponses = {
+    /**
+     * Successful Response
+     */
+    200: OrganizationsPublic;
+};
+
+export type organizationsReadMyOrganizationsResponse = organizationsReadMyOrganizationsResponses[keyof organizationsReadMyOrganizationsResponses];
+
+export type organizationsCreateOrganizationData = {
+    body: OrganizationCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations';
+};
+
+export type organizationsCreateOrganizationErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type organizationsCreateOrganizationError = organizationsCreateOrganizationErrors[keyof organizationsCreateOrganizationErrors];
+
+export type organizationsCreateOrganizationResponses = {
+    /**
+     * Successful Response
+     */
+    201: OrganizationPublic;
+};
+
+export type organizationsCreateOrganizationResponse = organizationsCreateOrganizationResponses[keyof organizationsCreateOrganizationResponses];
+
+export type organizationsReadMembersData = {
+    body?: never;
+    path: {
+        /**
+         * Org Id
+         */
+        org_id: string;
+    };
+    query?: never;
+    url: '/api/v1/organizations/{org_id}/members';
+};
+
+export type organizationsReadMembersErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type organizationsReadMembersError = organizationsReadMembersErrors[keyof organizationsReadMembersErrors];
+
+export type organizationsReadMembersResponses = {
+    /**
+     * Successful Response
+     */
+    200: MembersPublic;
+};
+
+export type organizationsReadMembersResponse = organizationsReadMembersResponses[keyof organizationsReadMembersResponses];
+
+export type organizationsAddMemberData = {
+    body: MemberAdd;
+    path: {
+        /**
+         * Org Id
+         */
+        org_id: string;
+    };
+    query?: never;
+    url: '/api/v1/organizations/{org_id}/members';
+};
+
+export type organizationsAddMemberErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type organizationsAddMemberError = organizationsAddMemberErrors[keyof organizationsAddMemberErrors];
+
+export type organizationsAddMemberResponses = {
+    /**
+     * Successful Response
+     */
+    201: MemberPublic;
+};
+
+export type organizationsAddMemberResponse = organizationsAddMemberResponses[keyof organizationsAddMemberResponses];
+
+export type organizationsRemoveMemberData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+        /**
+         * Org Id
+         */
+        org_id: string;
+    };
+    query?: never;
+    url: '/api/v1/organizations/{org_id}/members/{user_id}';
+};
+
+export type organizationsRemoveMemberErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type organizationsRemoveMemberError = organizationsRemoveMemberErrors[keyof organizationsRemoveMemberErrors];
+
+export type organizationsRemoveMemberResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type organizationsRemoveMemberResponse = organizationsRemoveMemberResponses[keyof organizationsRemoveMemberResponses];
+
+export type organizationsUpdateMemberRoleData = {
+    body: MemberUpdate;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+        /**
+         * Org Id
+         */
+        org_id: string;
+    };
+    query?: never;
+    url: '/api/v1/organizations/{org_id}/members/{user_id}';
+};
+
+export type organizationsUpdateMemberRoleErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type organizationsUpdateMemberRoleError = organizationsUpdateMemberRoleErrors[keyof organizationsUpdateMemberRoleErrors];
+
+export type organizationsUpdateMemberRoleResponses = {
+    /**
+     * Successful Response
+     */
+    200: MemberPublic;
+};
+
+export type organizationsUpdateMemberRoleResponse = organizationsUpdateMemberRoleResponses[keyof organizationsUpdateMemberRoleResponses];
+
+export type organizationsReadDashboardData = {
+    body?: never;
+    path: {
+        /**
+         * Org Id
+         */
+        org_id: string;
+    };
+    query?: never;
+    url: '/api/v1/organizations/{org_id}/dashboard';
+};
+
+export type organizationsReadDashboardErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type organizationsReadDashboardError = organizationsReadDashboardErrors[keyof organizationsReadDashboardErrors];
+
+export type organizationsReadDashboardResponses = {
+    /**
+     * Successful Response
+     */
+    200: DashboardPublic;
+};
+
+export type organizationsReadDashboardResponse = organizationsReadDashboardResponses[keyof organizationsReadDashboardResponses];
+
+export type sitesReadSitesData = {
+    body?: never;
+    path: {
+        /**
+         * Org Id
+         */
+        org_id: string;
+    };
+    query?: {
+        /**
+         * Include Inactive
+         */
+        include_inactive?: boolean;
+    };
+    url: '/api/v1/organizations/{org_id}/sites';
+};
+
+export type sitesReadSitesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type sitesReadSitesError = sitesReadSitesErrors[keyof sitesReadSitesErrors];
+
+export type sitesReadSitesResponses = {
+    /**
+     * Successful Response
+     */
+    200: SitesPublic;
+};
+
+export type sitesReadSitesResponse = sitesReadSitesResponses[keyof sitesReadSitesResponses];
+
+export type sitesCreateSiteData = {
+    body: SiteCreate;
+    path: {
+        /**
+         * Org Id
+         */
+        org_id: string;
+    };
+    query?: never;
+    url: '/api/v1/organizations/{org_id}/sites';
+};
+
+export type sitesCreateSiteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type sitesCreateSiteError = sitesCreateSiteErrors[keyof sitesCreateSiteErrors];
+
+export type sitesCreateSiteResponses = {
+    /**
+     * Successful Response
+     */
+    201: SitePublic;
+};
+
+export type sitesCreateSiteResponse = sitesCreateSiteResponses[keyof sitesCreateSiteResponses];
+
+export type sitesUpdateSiteData = {
+    body: SiteUpdate;
+    path: {
+        /**
+         * Site Id
+         */
+        site_id: string;
+        /**
+         * Org Id
+         */
+        org_id: string;
+    };
+    query?: never;
+    url: '/api/v1/organizations/{org_id}/sites/{site_id}';
+};
+
+export type sitesUpdateSiteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type sitesUpdateSiteError = sitesUpdateSiteErrors[keyof sitesUpdateSiteErrors];
+
+export type sitesUpdateSiteResponses = {
+    /**
+     * Successful Response
+     */
+    200: SitePublic;
+};
+
+export type sitesUpdateSiteResponse = sitesUpdateSiteResponses[keyof sitesUpdateSiteResponses];
+
+export type resourcesReadResourcesData = {
+    body?: never;
+    path: {
+        /**
+         * Org Id
+         */
+        org_id: string;
+    };
+    query?: {
+        /**
+         * Site Id
+         */
+        site_id?: string | null;
+        /**
+         * Q
+         */
+        q?: string | null;
+        /**
+         * Min Capacity
+         */
+        min_capacity?: number | null;
+        /**
+         * Feature
+         */
+        feature?: string | null;
+        /**
+         * Status
+         */
+        status?: string | null;
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Page Size
+         */
+        page_size?: number;
+    };
+    url: '/api/v1/organizations/{org_id}/resources';
+};
+
+export type resourcesReadResourcesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resourcesReadResourcesError = resourcesReadResourcesErrors[keyof resourcesReadResourcesErrors];
+
+export type resourcesReadResourcesResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResourcesPublic;
+};
+
+export type resourcesReadResourcesResponse = resourcesReadResourcesResponses[keyof resourcesReadResourcesResponses];
+
+export type resourcesCreateResourceData = {
+    body: ResourceCreate;
+    path: {
+        /**
+         * Org Id
+         */
+        org_id: string;
+    };
+    query?: never;
+    url: '/api/v1/organizations/{org_id}/resources';
+};
+
+export type resourcesCreateResourceErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resourcesCreateResourceError = resourcesCreateResourceErrors[keyof resourcesCreateResourceErrors];
+
+export type resourcesCreateResourceResponses = {
+    /**
+     * Successful Response
+     */
+    201: ResourcePublic;
+};
+
+export type resourcesCreateResourceResponse = resourcesCreateResourceResponses[keyof resourcesCreateResourceResponses];
+
+export type resourcesReadResourceData = {
+    body?: never;
+    path: {
+        /**
+         * Resource Id
+         */
+        resource_id: string;
+    };
+    query?: never;
+    url: '/api/v1/resources/{resource_id}';
+};
+
+export type resourcesReadResourceErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resourcesReadResourceError = resourcesReadResourceErrors[keyof resourcesReadResourceErrors];
+
+export type resourcesReadResourceResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResourcePublic;
+};
+
+export type resourcesReadResourceResponse = resourcesReadResourceResponses[keyof resourcesReadResourceResponses];
+
+export type resourcesUpdateResourceData = {
+    body: ResourceUpdate;
+    path: {
+        /**
+         * Resource Id
+         */
+        resource_id: string;
+    };
+    query?: never;
+    url: '/api/v1/resources/{resource_id}';
+};
+
+export type resourcesUpdateResourceErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resourcesUpdateResourceError = resourcesUpdateResourceErrors[keyof resourcesUpdateResourceErrors];
+
+export type resourcesUpdateResourceResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResourcePublic;
+};
+
+export type resourcesUpdateResourceResponse = resourcesUpdateResourceResponses[keyof resourcesUpdateResourceResponses];
+
+export type resourcesReadOpeningRulesData = {
+    body?: never;
+    path: {
+        /**
+         * Resource Id
+         */
+        resource_id: string;
+    };
+    query?: never;
+    url: '/api/v1/resources/{resource_id}/opening-rules';
+};
+
+export type resourcesReadOpeningRulesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resourcesReadOpeningRulesError = resourcesReadOpeningRulesErrors[keyof resourcesReadOpeningRulesErrors];
+
+export type resourcesReadOpeningRulesResponses = {
+    /**
+     * Successful Response
+     */
+    200: OpeningRulesPublic;
+};
+
+export type resourcesReadOpeningRulesResponse = resourcesReadOpeningRulesResponses[keyof resourcesReadOpeningRulesResponses];
+
+export type resourcesReplaceOpeningRulesData = {
+    body: OpeningRulesReplace;
+    path: {
+        /**
+         * Resource Id
+         */
+        resource_id: string;
+    };
+    query?: never;
+    url: '/api/v1/resources/{resource_id}/opening-rules';
+};
+
+export type resourcesReplaceOpeningRulesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resourcesReplaceOpeningRulesError = resourcesReplaceOpeningRulesErrors[keyof resourcesReplaceOpeningRulesErrors];
+
+export type resourcesReplaceOpeningRulesResponses = {
+    /**
+     * Successful Response
+     */
+    200: OpeningRulesPublic;
+};
+
+export type resourcesReplaceOpeningRulesResponse = resourcesReplaceOpeningRulesResponses[keyof resourcesReplaceOpeningRulesResponses];
+
+export type resourcesReadBlackoutsData = {
+    body?: never;
+    path: {
+        /**
+         * Resource Id
+         */
+        resource_id: string;
+    };
+    query?: never;
+    url: '/api/v1/resources/{resource_id}/blackouts';
+};
+
+export type resourcesReadBlackoutsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resourcesReadBlackoutsError = resourcesReadBlackoutsErrors[keyof resourcesReadBlackoutsErrors];
+
+export type resourcesReadBlackoutsResponses = {
+    /**
+     * Response Resources-Read Blackouts
+     *
+     * Successful Response
+     */
+    200: Array<BlackoutPublic>;
+};
+
+export type resourcesReadBlackoutsResponse = resourcesReadBlackoutsResponses[keyof resourcesReadBlackoutsResponses];
+
+export type resourcesCreateBlackoutData = {
+    body: BlackoutCreate;
+    path: {
+        /**
+         * Resource Id
+         */
+        resource_id: string;
+    };
+    query?: never;
+    url: '/api/v1/resources/{resource_id}/blackouts';
+};
+
+export type resourcesCreateBlackoutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resourcesCreateBlackoutError = resourcesCreateBlackoutErrors[keyof resourcesCreateBlackoutErrors];
+
+export type resourcesCreateBlackoutResponses = {
+    /**
+     * Successful Response
+     */
+    201: BlackoutPublic;
+};
+
+export type resourcesCreateBlackoutResponse = resourcesCreateBlackoutResponses[keyof resourcesCreateBlackoutResponses];
+
+export type resourcesReadAvailabilityData = {
+    body?: never;
+    path: {
+        /**
+         * Resource Id
+         */
+        resource_id: string;
+    };
+    query?: {
+        /**
+         * Date
+         */
+        date?: string | null;
+    };
+    url: '/api/v1/resources/{resource_id}/availability';
+};
+
+export type resourcesReadAvailabilityErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resourcesReadAvailabilityError = resourcesReadAvailabilityErrors[keyof resourcesReadAvailabilityErrors];
+
+export type resourcesReadAvailabilityResponses = {
+    /**
+     * Successful Response
+     */
+    200: AvailabilityPublic;
+};
+
+export type resourcesReadAvailabilityResponse = resourcesReadAvailabilityResponses[keyof resourcesReadAvailabilityResponses];
+
+export type reservationsCreateReservationEndpointData = {
+    body: ReservationCreate;
+    headers?: {
+        /**
+         * Idempotency-Key
+         */
+        'Idempotency-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/reservations';
+};
+
+export type reservationsCreateReservationEndpointErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type reservationsCreateReservationEndpointError = reservationsCreateReservationEndpointErrors[keyof reservationsCreateReservationEndpointErrors];
+
+export type reservationsCreateReservationEndpointResponses = {
+    /**
+     * Successful Response
+     */
+    201: ReservationPublic;
+};
+
+export type reservationsCreateReservationEndpointResponse = reservationsCreateReservationEndpointResponses[keyof reservationsCreateReservationEndpointResponses];
+
+export type reservationsReadMyReservationsData = {
     body?: never;
     path?: never;
     query?: {
         /**
-         * Skip
+         * Scope
          */
-        skip?: number;
+        scope?: string;
         /**
-         * Limit
+         * Page
          */
-        limit?: number;
+        page?: number;
+        /**
+         * Page Size
+         */
+        page_size?: number;
     };
-    url: '/api/v1/items/';
+    url: '/api/v1/reservations/me';
 };
 
-export type itemsReadItemsErrors = {
+export type reservationsReadMyReservationsErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsReadItemsError = itemsReadItemsErrors[keyof itemsReadItemsErrors];
+export type reservationsReadMyReservationsError = reservationsReadMyReservationsErrors[keyof reservationsReadMyReservationsErrors];
 
-export type itemsReadItemsResponses = {
+export type reservationsReadMyReservationsResponses = {
     /**
      * Successful Response
      */
-    200: ItemsPublic;
+    200: ReservationsPublic;
 };
 
-export type itemsReadItemsResponse = itemsReadItemsResponses[keyof itemsReadItemsResponses];
+export type reservationsReadMyReservationsResponse = reservationsReadMyReservationsResponses[keyof reservationsReadMyReservationsResponses];
 
-export type itemsCreateItemData = {
-    body: ItemCreate;
-    path?: never;
-    query?: never;
-    url: '/api/v1/items/';
-};
-
-export type itemsCreateItemErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type itemsCreateItemError = itemsCreateItemErrors[keyof itemsCreateItemErrors];
-
-export type itemsCreateItemResponses = {
-    /**
-     * Successful Response
-     */
-    200: ItemPublic;
-};
-
-export type itemsCreateItemResponse = itemsCreateItemResponses[keyof itemsCreateItemResponses];
-
-export type itemsDeleteItemData = {
+export type reservationsReadOrganizationReservationsData = {
     body?: never;
     path: {
         /**
-         * Id
+         * Org Id
          */
-        id: string;
+        org_id: string;
     };
-    query?: never;
-    url: '/api/v1/items/{id}';
+    query?: {
+        /**
+         * Status
+         */
+        status?: string | null;
+        /**
+         * Resource Id
+         */
+        resource_id?: string | null;
+        /**
+         * User Email
+         */
+        user_email?: string | null;
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Page Size
+         */
+        page_size?: number;
+    };
+    url: '/api/v1/reservations/organizations/{org_id}/reservations';
 };
 
-export type itemsDeleteItemErrors = {
+export type reservationsReadOrganizationReservationsErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsDeleteItemError = itemsDeleteItemErrors[keyof itemsDeleteItemErrors];
+export type reservationsReadOrganizationReservationsError = reservationsReadOrganizationReservationsErrors[keyof reservationsReadOrganizationReservationsErrors];
 
-export type itemsDeleteItemResponses = {
+export type reservationsReadOrganizationReservationsResponses = {
     /**
      * Successful Response
      */
-    200: Message;
+    200: ReservationsPublic;
 };
 
-export type itemsDeleteItemResponse = itemsDeleteItemResponses[keyof itemsDeleteItemResponses];
+export type reservationsReadOrganizationReservationsResponse = reservationsReadOrganizationReservationsResponses[keyof reservationsReadOrganizationReservationsResponses];
 
-export type itemsReadItemData = {
+export type reservationsReadReservationData = {
     body?: never;
     path: {
         /**
-         * Id
+         * Reservation Id
          */
-        id: string;
+        reservation_id: string;
     };
     query?: never;
-    url: '/api/v1/items/{id}';
+    url: '/api/v1/reservations/{reservation_id}';
 };
 
-export type itemsReadItemErrors = {
+export type reservationsReadReservationErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsReadItemError = itemsReadItemErrors[keyof itemsReadItemErrors];
+export type reservationsReadReservationError = reservationsReadReservationErrors[keyof reservationsReadReservationErrors];
 
-export type itemsReadItemResponses = {
+export type reservationsReadReservationResponses = {
     /**
      * Successful Response
      */
-    200: ItemPublic;
+    200: ReservationPublic;
 };
 
-export type itemsReadItemResponse = itemsReadItemResponses[keyof itemsReadItemResponses];
+export type reservationsReadReservationResponse = reservationsReadReservationResponses[keyof reservationsReadReservationResponses];
 
-export type itemsUpdateItemData = {
-    body: ItemUpdate;
+export type reservationsCancelReservationEndpointData = {
+    body?: never;
     path: {
         /**
-         * Id
+         * Reservation Id
          */
-        id: string;
+        reservation_id: string;
     };
     query?: never;
-    url: '/api/v1/items/{id}';
+    url: '/api/v1/reservations/{reservation_id}/cancel';
 };
 
-export type itemsUpdateItemErrors = {
+export type reservationsCancelReservationEndpointErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsUpdateItemError = itemsUpdateItemErrors[keyof itemsUpdateItemErrors];
+export type reservationsCancelReservationEndpointError = reservationsCancelReservationEndpointErrors[keyof reservationsCancelReservationEndpointErrors];
 
-export type itemsUpdateItemResponses = {
+export type reservationsCancelReservationEndpointResponses = {
     /**
      * Successful Response
      */
-    200: ItemPublic;
+    200: ReservationPublic;
 };
 
-export type itemsUpdateItemResponse = itemsUpdateItemResponses[keyof itemsUpdateItemResponses];
+export type reservationsCancelReservationEndpointResponse = reservationsCancelReservationEndpointResponses[keyof reservationsCancelReservationEndpointResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;

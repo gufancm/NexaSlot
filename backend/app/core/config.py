@@ -1,10 +1,10 @@
 import warnings
 from typing import Literal, Self
+from urllib.parse import urlsplit
 
 from pydantic import (
     EmailStr,
     HttpUrl,
-    PostgresDsn,
     computed_field,
     field_validator,
     model_validator,
@@ -28,16 +28,28 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
-    DATABASE_URL: PostgresDsn
 
-    @field_validator("DATABASE_URL", mode="before")
-    @classmethod
-    def _use_psycopg_driver(cls, value: str | PostgresDsn) -> str:
-        database_url = str(value)
-        for scheme in ("postgres://", "postgresql://"):
-            if database_url.startswith(scheme):
-                return database_url.replace(scheme, "postgresql+psycopg://", 1)
-        return database_url
+    # MySQL (PyMySQL driver). Host port 3307 is mapped to the container's 3306.
+    DATABASE_URL: str = (
+        "mysql+pymysql://nexaslot:changethis@localhost:3307/app?charset=utf8mb4"
+    )
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_RECYCLE_SECONDS: int = 1800
+    DB_ECHO: bool = False
+
+    # Redis is optional for V1: it is only used for health checks, never as the
+    # source of truth for booking availability.
+    REDIS_URL: str = "redis://localhost:6380/0"
+    REDIS_TIMEOUT_SECONDS: float = 2.0
+
+    # Booking rules (see docs: V1 defaults, all configurable).
+    DEFAULT_TIMEZONE: str = "Asia/Shanghai"
+    BOOKING_SLOT_MINUTES: int = 30
+    BOOKING_WINDOW_DAYS: int = 14
+    BOOKING_MIN_LEAD_MINUTES: int = 15
+    BOOKING_MAX_DURATION_MINUTES: int = 240
+    BOOKING_CANCEL_CUTOFF_MINUTES: int = 30
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
@@ -65,6 +77,26 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def _require_mysql(cls, value: str) -> str:
+        if not value.startswith("mysql+pymysql://"):
+            raise ValueError(
+                "DATABASE_URL must use the mysql+pymysql:// driver, "
+                f"got: {value.split('://', 1)[0]}://"
+            )
+        if "charset=" not in value:
+            separator = "&" if "?" in value else "?"
+            value = f"{value}{separator}charset=utf8mb4"
+        return value
+
+    @field_validator("REDIS_URL")
+    @classmethod
+    def _require_redis(cls, value: str) -> str:
+        if not value.startswith(("redis://", "rediss://")):
+            raise ValueError("REDIS_URL must start with redis:// or rediss://")
+        return value
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (
@@ -79,8 +111,9 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> Self:
         self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-        for host in self.DATABASE_URL.hosts():
-            self._check_default_secret("DATABASE_URL password", host["password"])
+        self._check_default_secret(
+            "DATABASE_URL password", urlsplit(self.DATABASE_URL).password
+        )
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )

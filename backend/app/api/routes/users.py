@@ -2,7 +2,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import col, delete, func, select
+from sqlmodel import func, select
 
 from app import crud
 from app.api.deps import (
@@ -13,8 +13,8 @@ from app.api.deps import (
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
-    Item,
     Message,
+    Reservation,
     UpdatePassword,
     User,
     UserCreate,
@@ -42,9 +42,7 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     count_statement = select(func.count()).select_from(User)
     count = session.exec(count_statement).one()
 
-    statement = (
-        select(User).order_by(col(User.created_at).desc()).offset(skip).limit(limit)
-    )
+    statement = select(User).order_by(User.created_at.desc()).offset(skip).limit(limit)
     users = session.exec(statement).all()
 
     users_public = [UserPublic.model_validate(user) for user in users]
@@ -225,8 +223,18 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    statement = delete(Item).where(col(Item.owner_id) == user_id)
-    session.exec(statement)
+    reservations = int(
+        session.exec(
+            select(func.count())
+            .select_from(Reservation)
+            .where(Reservation.user_id == user_id)
+        ).one()
+    )
+    if reservations:
+        raise HTTPException(
+            status_code=409,
+            detail="This user still has reservations and cannot be deleted",
+        )
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")

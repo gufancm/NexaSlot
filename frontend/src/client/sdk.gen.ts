@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { itemsCreateItemData, itemsCreateItemErrors, itemsCreateItemResponses, itemsDeleteItemData, itemsDeleteItemErrors, itemsDeleteItemResponses, itemsReadItemData, itemsReadItemErrors, itemsReadItemResponses, itemsReadItemsData, itemsReadItemsErrors, itemsReadItemsResponses, itemsUpdateItemData, itemsUpdateItemErrors, itemsUpdateItemResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, organizationsAddMemberData, organizationsAddMemberErrors, organizationsAddMemberResponses, organizationsCreateOrganizationData, organizationsCreateOrganizationErrors, organizationsCreateOrganizationResponses, organizationsReadDashboardData, organizationsReadDashboardErrors, organizationsReadDashboardResponses, organizationsReadMembersData, organizationsReadMembersErrors, organizationsReadMembersResponses, organizationsReadMyOrganizationsData, organizationsReadMyOrganizationsResponses, organizationsRemoveMemberData, organizationsRemoveMemberErrors, organizationsRemoveMemberResponses, organizationsUpdateMemberRoleData, organizationsUpdateMemberRoleErrors, organizationsUpdateMemberRoleResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, reservationsCancelReservationEndpointData, reservationsCancelReservationEndpointErrors, reservationsCancelReservationEndpointResponses, reservationsCreateReservationEndpointData, reservationsCreateReservationEndpointErrors, reservationsCreateReservationEndpointResponses, reservationsReadMyReservationsData, reservationsReadMyReservationsErrors, reservationsReadMyReservationsResponses, reservationsReadOrganizationReservationsData, reservationsReadOrganizationReservationsErrors, reservationsReadOrganizationReservationsResponses, reservationsReadReservationData, reservationsReadReservationErrors, reservationsReadReservationResponses, resourcesCreateBlackoutData, resourcesCreateBlackoutErrors, resourcesCreateBlackoutResponses, resourcesCreateResourceData, resourcesCreateResourceErrors, resourcesCreateResourceResponses, resourcesReadAvailabilityData, resourcesReadAvailabilityErrors, resourcesReadAvailabilityResponses, resourcesReadBlackoutsData, resourcesReadBlackoutsErrors, resourcesReadBlackoutsResponses, resourcesReadOpeningRulesData, resourcesReadOpeningRulesErrors, resourcesReadOpeningRulesResponses, resourcesReadResourceData, resourcesReadResourceErrors, resourcesReadResourceResponses, resourcesReadResourcesData, resourcesReadResourcesErrors, resourcesReadResourcesResponses, resourcesReplaceOpeningRulesData, resourcesReplaceOpeningRulesErrors, resourcesReplaceOpeningRulesResponses, resourcesUpdateResourceData, resourcesUpdateResourceErrors, resourcesUpdateResourceResponses, sitesCreateSiteData, sitesCreateSiteErrors, sitesCreateSiteResponses, sitesReadSitesData, sitesReadSitesErrors, sitesReadSitesResponses, sitesUpdateSiteData, sitesUpdateSiteErrors, sitesUpdateSiteResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -274,6 +274,8 @@ export class UtilsService {
     
     /**
      * Health Check
+     *
+     * Liveness probe: MySQL is required, Redis status is reported as degraded.
      */
     public static healthCheck<ThrowOnError extends boolean = true>(options?: Options<utilsHealthCheckData, ThrowOnError>) {
         return (options?.client ?? client).get<utilsHealthCheckResponses, unknown, ThrowOnError>({
@@ -284,31 +286,29 @@ export class UtilsService {
     }
 }
 
-export class ItemsService {
+export class OrganizationsService {
     /**
-     * Read Items
+     * Read My Organizations
      *
-     * Retrieve items.
+     * Organizations the caller can access, with the caller's role.
      */
-    public static readItems<ThrowOnError extends boolean = true>(options?: Options<itemsReadItemsData, ThrowOnError>) {
-        return (options?.client ?? client).get<itemsReadItemsResponses, itemsReadItemsErrors, ThrowOnError>({
+    public static readMyOrganizations<ThrowOnError extends boolean = true>(options?: Options<organizationsReadMyOrganizationsData, ThrowOnError>) {
+        return (options?.client ?? client).get<organizationsReadMyOrganizationsResponses, unknown, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/',
+            url: '/api/v1/organizations/me',
             ...options
         });
     }
     
     /**
-     * Create Item
-     *
-     * Create new item.
+     * Create Organization
      */
-    public static createItem<ThrowOnError extends boolean = true>(options: Options<itemsCreateItemData, ThrowOnError>) {
-        return (options.client ?? client).post<itemsCreateItemResponses, itemsCreateItemErrors, ThrowOnError>({
+    public static createOrganization<ThrowOnError extends boolean = true>(options: Options<organizationsCreateOrganizationData, ThrowOnError>) {
+        return (options.client ?? client).post<organizationsCreateOrganizationResponses, organizationsCreateOrganizationErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/',
+            url: '/api/v1/organizations',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
@@ -318,48 +318,307 @@ export class ItemsService {
     }
     
     /**
-     * Delete Item
-     *
-     * Delete an item.
+     * Read Members
      */
-    public static deleteItem<ThrowOnError extends boolean = true>(options: Options<itemsDeleteItemData, ThrowOnError>) {
-        return (options.client ?? client).delete<itemsDeleteItemResponses, itemsDeleteItemErrors, ThrowOnError>({
+    public static readMembers<ThrowOnError extends boolean = true>(options: Options<organizationsReadMembersData, ThrowOnError>) {
+        return (options.client ?? client).get<organizationsReadMembersResponses, organizationsReadMembersErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/{id}',
+            url: '/api/v1/organizations/{org_id}/members',
             ...options
         });
     }
     
     /**
-     * Read Item
-     *
-     * Get item by ID.
+     * Add Member
      */
-    public static readItem<ThrowOnError extends boolean = true>(options: Options<itemsReadItemData, ThrowOnError>) {
-        return (options.client ?? client).get<itemsReadItemResponses, itemsReadItemErrors, ThrowOnError>({
+    public static addMember<ThrowOnError extends boolean = true>(options: Options<organizationsAddMemberData, ThrowOnError>) {
+        return (options.client ?? client).post<organizationsAddMemberResponses, organizationsAddMemberErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/{id}',
-            ...options
-        });
-    }
-    
-    /**
-     * Update Item
-     *
-     * Update an item.
-     */
-    public static updateItem<ThrowOnError extends boolean = true>(options: Options<itemsUpdateItemData, ThrowOnError>) {
-        return (options.client ?? client).put<itemsUpdateItemResponses, itemsUpdateItemErrors, ThrowOnError>({
-            responseType: 'json',
-            security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/{id}',
+            url: '/api/v1/organizations/{org_id}/members',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
                 ...options.headers
             }
+        });
+    }
+    
+    /**
+     * Remove Member
+     */
+    public static removeMember<ThrowOnError extends boolean = true>(options: Options<organizationsRemoveMemberData, ThrowOnError>) {
+        return (options.client ?? client).delete<organizationsRemoveMemberResponses, organizationsRemoveMemberErrors, ThrowOnError>({
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/{org_id}/members/{user_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Member Role
+     */
+    public static updateMemberRole<ThrowOnError extends boolean = true>(options: Options<organizationsUpdateMemberRoleData, ThrowOnError>) {
+        return (options.client ?? client).patch<organizationsUpdateMemberRoleResponses, organizationsUpdateMemberRoleErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/{org_id}/members/{user_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read Dashboard
+     */
+    public static readDashboard<ThrowOnError extends boolean = true>(options: Options<organizationsReadDashboardData, ThrowOnError>) {
+        return (options.client ?? client).get<organizationsReadDashboardResponses, organizationsReadDashboardErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/{org_id}/dashboard',
+            ...options
+        });
+    }
+}
+
+export class SitesService {
+    /**
+     * Read Sites
+     */
+    public static readSites<ThrowOnError extends boolean = true>(options: Options<sitesReadSitesData, ThrowOnError>) {
+        return (options.client ?? client).get<sitesReadSitesResponses, sitesReadSitesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/{org_id}/sites',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Site
+     */
+    public static createSite<ThrowOnError extends boolean = true>(options: Options<sitesCreateSiteData, ThrowOnError>) {
+        return (options.client ?? client).post<sitesCreateSiteResponses, sitesCreateSiteErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/{org_id}/sites',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Update Site
+     */
+    public static updateSite<ThrowOnError extends boolean = true>(options: Options<sitesUpdateSiteData, ThrowOnError>) {
+        return (options.client ?? client).patch<sitesUpdateSiteResponses, sitesUpdateSiteErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/{org_id}/sites/{site_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class ResourcesService {
+    /**
+     * Read Resources
+     */
+    public static readResources<ThrowOnError extends boolean = true>(options: Options<resourcesReadResourcesData, ThrowOnError>) {
+        return (options.client ?? client).get<resourcesReadResourcesResponses, resourcesReadResourcesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/{org_id}/resources',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Resource
+     */
+    public static createResource<ThrowOnError extends boolean = true>(options: Options<resourcesCreateResourceData, ThrowOnError>) {
+        return (options.client ?? client).post<resourcesCreateResourceResponses, resourcesCreateResourceErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/{org_id}/resources',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read Resource
+     */
+    public static readResource<ThrowOnError extends boolean = true>(options: Options<resourcesReadResourceData, ThrowOnError>) {
+        return (options.client ?? client).get<resourcesReadResourceResponses, resourcesReadResourceErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/resources/{resource_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Resource
+     */
+    public static updateResource<ThrowOnError extends boolean = true>(options: Options<resourcesUpdateResourceData, ThrowOnError>) {
+        return (options.client ?? client).patch<resourcesUpdateResourceResponses, resourcesUpdateResourceErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/resources/{resource_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read Opening Rules
+     */
+    public static readOpeningRules<ThrowOnError extends boolean = true>(options: Options<resourcesReadOpeningRulesData, ThrowOnError>) {
+        return (options.client ?? client).get<resourcesReadOpeningRulesResponses, resourcesReadOpeningRulesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/resources/{resource_id}/opening-rules',
+            ...options
+        });
+    }
+    
+    /**
+     * Replace Opening Rules
+     */
+    public static replaceOpeningRules<ThrowOnError extends boolean = true>(options: Options<resourcesReplaceOpeningRulesData, ThrowOnError>) {
+        return (options.client ?? client).post<resourcesReplaceOpeningRulesResponses, resourcesReplaceOpeningRulesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/resources/{resource_id}/opening-rules',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read Blackouts
+     */
+    public static readBlackouts<ThrowOnError extends boolean = true>(options: Options<resourcesReadBlackoutsData, ThrowOnError>) {
+        return (options.client ?? client).get<resourcesReadBlackoutsResponses, resourcesReadBlackoutsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/resources/{resource_id}/blackouts',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Blackout
+     */
+    public static createBlackout<ThrowOnError extends boolean = true>(options: Options<resourcesCreateBlackoutData, ThrowOnError>) {
+        return (options.client ?? client).post<resourcesCreateBlackoutResponses, resourcesCreateBlackoutErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/resources/{resource_id}/blackouts',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read Availability
+     */
+    public static readAvailability<ThrowOnError extends boolean = true>(options: Options<resourcesReadAvailabilityData, ThrowOnError>) {
+        return (options.client ?? client).get<resourcesReadAvailabilityResponses, resourcesReadAvailabilityErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/resources/{resource_id}/availability',
+            ...options
+        });
+    }
+}
+
+export class ReservationsService {
+    /**
+     * Create Reservation Endpoint
+     */
+    public static createReservationEndpoint<ThrowOnError extends boolean = true>(options: Options<reservationsCreateReservationEndpointData, ThrowOnError>) {
+        return (options.client ?? client).post<reservationsCreateReservationEndpointResponses, reservationsCreateReservationEndpointErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/reservations',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read My Reservations
+     */
+    public static readMyReservations<ThrowOnError extends boolean = true>(options?: Options<reservationsReadMyReservationsData, ThrowOnError>) {
+        return (options?.client ?? client).get<reservationsReadMyReservationsResponses, reservationsReadMyReservationsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/reservations/me',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Organization Reservations
+     */
+    public static readOrganizationReservations<ThrowOnError extends boolean = true>(options: Options<reservationsReadOrganizationReservationsData, ThrowOnError>) {
+        return (options.client ?? client).get<reservationsReadOrganizationReservationsResponses, reservationsReadOrganizationReservationsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/reservations/organizations/{org_id}/reservations',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Reservation
+     */
+    public static readReservation<ThrowOnError extends boolean = true>(options: Options<reservationsReadReservationData, ThrowOnError>) {
+        return (options.client ?? client).get<reservationsReadReservationResponses, reservationsReadReservationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/reservations/{reservation_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Cancel Reservation Endpoint
+     */
+    public static cancelReservationEndpoint<ThrowOnError extends boolean = true>(options: Options<reservationsCancelReservationEndpointData, ThrowOnError>) {
+        return (options.client ?? client).post<reservationsCancelReservationEndpointResponses, reservationsCancelReservationEndpointErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/reservations/{reservation_id}/cancel',
+            ...options
         });
     }
 }
