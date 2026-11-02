@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
     DB_POOL_RECYCLE_SECONDS: int = 1800
+    DB_POOL_TIMEOUT_SECONDS: int = 30
     DB_ECHO: bool = False
 
     # Redis is optional for V1: it is only used for health checks, never as the
@@ -57,6 +58,8 @@ class Settings(BaseSettings):
     CACHE_KEY_PREFIX: str = "nexaslot"
     CACHE_AVAILABILITY_TTL_SECONDS: int = 60
     CACHE_RESOURCE_TTL_SECONDS: int = 300
+    CACHE_AVAILABILITY_JITTER_SECONDS: int = 15
+    CACHE_RESOURCE_JITTER_SECONDS: int = 60
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_BOOKING_CAPACITY: int = 10
     RATE_LIMIT_BOOKING_REFILL_PER_MINUTE: float = 10

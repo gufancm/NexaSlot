@@ -7,7 +7,9 @@ from pathlib import Path
 
 import sentry_sdk
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
+from sqlalchemy.exc import TimeoutError as PoolTimeoutError
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
@@ -38,6 +40,27 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(PoolTimeoutError)
+async def database_pool_timeout_handler(
+    request: Request, _exc: PoolTimeoutError
+) -> JSONResponse:
+    logger.error(
+        "database connection pool exhausted method=%s path=%s",
+        request.method,
+        request.url.path,
+    )
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": {
+                "code": "SERVICE_UNAVAILABLE",
+                "message": "Database connection pool exhausted, please retry",
+            }
+        },
+    )
+
 
 app.add_middleware(
     CORSMiddleware,

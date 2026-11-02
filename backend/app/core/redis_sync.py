@@ -73,13 +73,15 @@ def cache_delete(key: str) -> None:
         logger.warning("redis cache delete failed: %s", exc)
 
 
-def cache_incr(key: str) -> int | None:
+def cache_incr(key: str, *, raise_on_error: bool = False) -> int | None:
     try:
         value = int(get_sync_redis().incr(key))
         get_sync_redis().expire(key, 60 * 60 * 24 * 7)
         return value
     except RedisError as exc:
         logger.warning("redis cache incr failed: %s", exc)
+        if raise_on_error:
+            raise
         return None
 
 

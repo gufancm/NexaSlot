@@ -106,6 +106,12 @@ def test_match_hard_constraints_and_deterministic_order(
     assert ids == [ctx["small"]["id"], ctx["large"]["id"]]
     assert first.json()["data"][0]["score"] > first.json()["data"][1]["score"]
     assert any("容量" in reason for reason in first.json()["data"][0]["reasons"])
+    scored = first.json()["data"][0]
+    assert scored["capacity_score"] == 0.5
+    assert scored["site_score"] == 0.5
+    assert scored["time_score"] == 0.5
+    assert scored["total_score"] == 0.5
+    assert scored["score"] == 50.0
 
     second = client.post(f"{API}/scheduling/match", headers=ctx["headers"], json=base)
     assert [item["resource"]["id"] for item in second.json()["data"]] == ids

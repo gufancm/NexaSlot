@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy import update
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.cache.availability import invalidate_resource
@@ -27,14 +27,22 @@ from app.models import (
     db_now,
 )
 from app.schemas import ErrorCode, ReservationCreate, ReservationPublic
-from app.services.allocation import allocate_next_hold, lock_resource
+from app.services.allocation import (
+    allocate_next_hold,
+    lock_active_resource,
+    lock_resource,
+)
 from app.services.audit import record_audit
+from app.services.db_retry import retry_on_deadlock
 from app.services.orgs import require_org_access
-from app.services.outbox import enqueue, notification_payload
+from app.services.outbox import (
+    enqueue,
+    enqueue_cache_invalidation,
+    notification_payload,
+)
 from app.services.slots import SLOT_MINUTES, ensure_range_slots
 
 CREATE_OPERATION = "reservation.create"
-MAX_DEADLOCK_RETRIES = 2
 
 
 def build_request_hash(payload: ReservationCreate) -> str:
@@ -189,7 +197,6 @@ def _create_once(
     *,
     user: User,
     resource: Resource,
-    site: Site,
     idem_key: str,
     request_hash: str,
     start_utc: datetime,
@@ -199,7 +206,8 @@ def _create_once(
         # Every write path locks the resource row first, then slots in
         # ascending order. This makes create/cancel/waitlist hand-off
         # serialise on the same resource instead of deadlocking on slots.
-        locked_resource = lock_resource(db, resource.id)
+        locked_resource, locked_site = lock_active_resource(db, resource.id)
+        validate_booking_rules(locked_site, start_utc, end_utc)
         locked_resource_id = locked_resource.id
         existing = db.exec(
             select(IdempotencyRecord)
@@ -224,7 +232,7 @@ def _create_once(
         _assert_slots_bookable(slots, start_utc, end_utc)
 
         reservation = Reservation(
-            organization_id=site.organization_id,
+            organization_id=locked_site.organization_id,
             resource_id=locked_resource.id,
             user_id=user.id,
             start_at=to_db(start_utc),
@@ -255,7 +263,7 @@ def _create_once(
         record_audit(
             db,
             actor_id=user.id,
-            organization_id=site.organization_id,
+            organization_id=locked_site.organization_id,
             action="reservation.create",
             target_type="reservation",
             target_id=reservation.id,
@@ -272,7 +280,7 @@ def _create_once(
             aggregate_id=reservation.id,
             payload=notification_payload(
                 user_id=user.id,
-                organization_id=site.organization_id,
+                organization_id=locked_site.organization_id,
                 title="预约已确认",
                 message=(
                     f"{locked_resource.name} 已为你保留 "
@@ -280,6 +288,9 @@ def _create_once(
                 ),
                 reservation_id=str(reservation.id),
             ),
+        )
+        enqueue_cache_invalidation(
+            db, resource_id=locked_resource.id, reason="reservation.create"
         )
 
         public = _reservation_public(db, reservation)
@@ -298,6 +309,7 @@ def _create_once(
     return public, False
 
 
+@retry_on_deadlock()
 def create_reservation(
     *,
     user: User,
@@ -321,54 +333,41 @@ def create_reservation(
     with Session(engine) as prep:
         ensure_range_slots(prep, resource, site, start_utc, end_utc)
 
-    attempt = 0
-    while True:
-        try:
-            return _create_once(
-                user=user,
-                resource=resource,
-                site=site,
-                idem_key=idem_key,
-                request_hash=request_hash,
-                start_utc=start_utc,
-                end_utc=end_utc,
-            )
-        except IntegrityError:
-            # Concurrent duplicate Idempotency-Key: replay the stored result.
-            with Session(engine) as replay_db:
-                stored = replay_db.exec(
-                    select(IdempotencyRecord).where(
-                        IdempotencyRecord.user_id == user.id,
-                        IdempotencyRecord.operation == CREATE_OPERATION,
-                        IdempotencyRecord.idem_key == idem_key,
+    try:
+        return _create_once(
+            user=user,
+            resource=resource,
+            idem_key=idem_key,
+            request_hash=request_hash,
+            start_utc=start_utc,
+            end_utc=end_utc,
+        )
+    except IntegrityError:
+        # Concurrent duplicate Idempotency-Key: replay the stored result.
+        with Session(engine) as replay_db:
+            stored = replay_db.exec(
+                select(IdempotencyRecord).where(
+                    IdempotencyRecord.user_id == user.id,
+                    IdempotencyRecord.operation == CREATE_OPERATION,
+                    IdempotencyRecord.idem_key == idem_key,
+                )
+            ).first()
+            if stored is not None:
+                if stored.request_hash != request_hash:
+                    raise api_error(
+                        409,
+                        ErrorCode.IDEMPOTENCY_CONFLICT,
+                        "This Idempotency-Key was already used with different parameters",
                     )
-                ).first()
-                if stored is not None:
-                    if stored.request_hash != request_hash:
-                        raise api_error(
-                            409,
-                            ErrorCode.IDEMPOTENCY_CONFLICT,
-                            "This Idempotency-Key was already used with different parameters",
-                        )
-                    return ReservationPublic.model_validate(stored.response), True
-            raise api_error(
-                409,
-                ErrorCode.CONFLICT,
-                "The request conflicted with another booking, please retry",
-            )
-        except OperationalError as exc:
-            attempt += 1
-            if getattr(exc.orig, "args", None) and exc.orig.args[0] in (1205, 1213):
-                if attempt <= MAX_DEADLOCK_RETRIES:
-                    continue
-                raise api_error(
-                    409,
-                    ErrorCode.CONFLICT,
-                    "The reservation could not be completed due to high contention, please retry",
-                ) from exc
-            raise
+                return ReservationPublic.model_validate(stored.response), True
+        raise api_error(
+            409,
+            ErrorCode.CONFLICT,
+            "The request conflicted with another booking, please retry",
+        )
 
 
+@retry_on_deadlock()
 def cancel_reservation(*, user: User, reservation_id: uuid.UUID) -> ReservationPublic:
     with Session(engine) as db:
         snapshot = db.get(Reservation, reservation_id)
@@ -386,6 +385,7 @@ def cancel_reservation(*, user: User, reservation_id: uuid.UUID) -> ReservationP
             select(Reservation)
             .where(Reservation.id == reservation_id)
             .with_for_update()
+            .execution_options(populate_existing=True)
         ).first()
         if reservation is None:
             raise api_error(
@@ -460,6 +460,9 @@ def cancel_reservation(*, user: User, reservation_id: uuid.UUID) -> ReservationP
                 ),
                 reservation_id=str(reservation.id),
             ),
+        )
+        enqueue_cache_invalidation(
+            db, resource_id=resource.id, reason="reservation.cancel"
         )
         db.commit()
         public = _reservation_public(db, reservation)

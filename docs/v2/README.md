@@ -15,13 +15,13 @@ V2 在 V1 的「资源发布 → 查空闲 → 预约 → 取消」闭环上，�
 | C. 自动候补 | FIFO 队列、OFFER/HOLD、确认/拒绝/超时递补 | `backend/app/services/waitlist.py`、`allocation.py` |
 | D. 可靠异步 | 事务内 Outbox、`SKIP LOCKED` 领取、租约、重试、幂等通知、独立 Worker | `backend/app/services/outbox.py`、`backend/app/worker.py` |
 | E. 智能匹配 | 硬约束过滤 + 可解释软评分 + 替代推荐 | `backend/app/services/matching.py` |
-| F. 测试与交付 | 74 项后端测试、Locust 场景、压测报告、多实例脚本、文档 | `backend/tests/`、`backend/locust/`、`docs/v2/` |
+| F. 测试与交付 | 162 项全量后端测试（V2 交付时 74 项）、Locust 场景、压测报告、多实例脚本、文档 | `backend/tests/`、`backend/locust/`、`docs/v2/` |
 
 ## 已验证证据
 
 | 验证项 | 结果 | 证据 |
 | --- | --- | --- |
-| 后端全量测试 | **74 passed**（V1 61 + V2 13） | `backend/tests/`，2026-10-28 本地执行 |
+| 后端全量测试 | **162 passed**（含 V3、并发锁竞争与 Outbox 可靠性） | `backend/tests/`，2026-11-02 本地执行 |
 | 后端静态检查 | `ruff check` 与 `ruff format --check` 通过 | 71 个 Python 文件 |
 | 前端检查 | `bun run build`、`bun run lint` 通过 | `frontend/src/client` 已按最新 OpenAPI 重新生成 |
 | 增量迁移 | 在已有 V1 数据库上从 `c143587f8700` 升到 `b8e52f1c4d90` | `docs/v2/migration.md` |

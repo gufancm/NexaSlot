@@ -62,4 +62,4 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 WORKDIR /app/backend/
 
-CMD ["fastapi", "run", "--workers", "4"]
+CMD ["sh", "-c", "exec fastapi run --workers ${WEB_CONCURRENCY:-4} --proxy-headers --forwarded-allow-ips ${FORWARDED_ALLOW_IPS:-127.0.0.1}"]

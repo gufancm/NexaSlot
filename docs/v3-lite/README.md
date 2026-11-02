@@ -112,7 +112,7 @@ LLM 输出被限制在预约条件字段，明确禁止输出 `resource_id`、`o
 
 ## 测试与证据
 
-- 后端：`138 passed`（V1 61 + V2 13 + V3 64）。
+- 后端：`162 passed`，包含并发锁竞争、幂等回滚、候补确认/过期竞争与 Outbox 租约重试。
 - 解析基线：40 条冻结中文样例，Mock 关键字段准确率 100%，详见 [evaluation.md](evaluation.md)。
 - Playwright：6 项 V3 E2E，覆盖成功预约、澄清、无结果、AI 不可用、手动预约退路、409 冲突。
 - 截图：[推荐](screenshots/smart-booking.png)、[确认成功](screenshots/smart-booking-confirmed.png)。

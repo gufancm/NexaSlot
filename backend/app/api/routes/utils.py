@@ -4,7 +4,7 @@ from sqlalchemy import text
 
 from app.api.deps import SessionDep, get_current_active_superuser
 from app.core.errors import api_error
-from app.core.redis import ping_redis
+from app.core.redis_sync import redis_is_available
 from app.models import Message
 from app.schemas import ErrorCode
 from app.utils import generate_test_email, send_email
@@ -31,14 +31,14 @@ def test_email(email_to: EmailStr) -> Message:
 
 
 @router.get("/health-check/")
-async def health_check(session: SessionDep) -> dict[str, object]:
+def health_check(session: SessionDep) -> dict[str, object]:
     """Liveness probe: MySQL is required, Redis status is reported as degraded."""
     try:
         session.exec(text("SELECT 1"))
     except Exception:
         raise api_error(503, ErrorCode.CONFLICT, "Database is unavailable")
 
-    redis_ok = await ping_redis()
+    redis_ok = redis_is_available()
     return {
         "status": "ok",
         "database": True,

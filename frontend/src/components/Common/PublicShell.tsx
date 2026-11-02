@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router"
-import { FaGithub } from "react-icons/fa"
 
 import { Appearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
@@ -45,15 +44,6 @@ export function PublicShell({ children }: PublicShellProps) {
       <main className="relative z-10 flex flex-1 flex-col">{children}</main>
 
       <footer className="relative z-10 flex shrink-0 flex-col items-center justify-center gap-2 px-6 py-5 text-center text-xs text-muted-foreground sm:flex-row sm:gap-3 sm:text-sm">
-        <a
-          href="https://github.com/gufancm/NexaSlot"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="GitHub"
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <FaGithub className="size-5" />
-        </a>
         <p>NexaSlot - 智能资源预约与调度平台 · {currentYear}</p>
       </footer>
     </div>

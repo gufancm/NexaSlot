@@ -79,9 +79,9 @@ docker compose run --rm backend bash scripts/prestart.sh
 docker compose watch
 ```
 
-- 应用：<http://localhost:8000>
+- 应用：<http://localhost:8001>
 - Adminer：<http://localhost:8080>
-- Traefik 面板：<http://localhost:8090>
+- 生产部署使用 Nginx + Certbot，配置见 `deployment-docker-compose.md`
 
 启动 Compose 后端前请先停掉本机 8000 端口的 FastAPI 进程。
 

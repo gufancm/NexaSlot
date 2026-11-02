@@ -2,9 +2,10 @@ from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.core.config import settings
+from app.models import IdempotencyRecord
 from tests.utils.booking import (
     add_member,
     create_organization,
@@ -298,3 +299,70 @@ def test_cannot_deactivate_resource_with_upcoming_reservation(
     )
     assert r.status_code == 409
     assert r.json()["detail"]["code"] == "CONFLICT"
+
+
+def test_same_idempotency_key_with_different_payload_conflicts(
+    client: TestClient, db: Session
+) -> None:
+    ctx = _setup_booking(client, db)
+    first_start, first_end = _window(ctx["day"], 10)
+    second_start, second_end = _window(ctx["day"], 11)
+    key = "key-same-different-payload"
+
+    first = _book(
+        client,
+        ctx["headers"],
+        ctx["resource"]["id"],
+        first_start,
+        first_end,
+        key,
+    )
+    assert first.status_code == 201, first.text
+
+    conflict = _book(
+        client,
+        ctx["headers"],
+        ctx["resource"]["id"],
+        second_start,
+        second_end,
+        key,
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"]["code"] == "IDEMPOTENCY_CONFLICT"
+
+    listed = client.get(
+        f"{API}/reservations/me",
+        headers=ctx["headers"],
+        params={"scope": "all"},
+    )
+    assert listed.status_code == 200
+    assert listed.json()["count"] == 1
+
+
+def test_failed_booking_rolls_back_idempotency_record(
+    client: TestClient, db: Session
+) -> None:
+    ctx = _setup_booking(client, db)
+    start, end = _window(ctx["day"], 12)
+
+    owner = _book(
+        client, ctx["headers"], ctx["resource"]["id"], start, end, "key-owner"
+    )
+    assert owner.status_code == 201, owner.text
+
+    failed_key = "key-failed-rollback"
+    failed = _book(
+        client,
+        ctx["headers"],
+        ctx["resource"]["id"],
+        start,
+        end,
+        failed_key,
+    )
+    assert failed.status_code == 409
+    assert failed.json()["detail"]["code"] == "SLOT_UNAVAILABLE"
+
+    stored = db.exec(
+        select(IdempotencyRecord).where(IdempotencyRecord.idem_key == failed_key)
+    ).first()
+    assert stored is None

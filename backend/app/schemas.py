@@ -413,6 +413,10 @@ class ResourceMatchRequest(SQLModel):
 class ResourceMatchCandidate(SQLModel):
     resource: ResourcePublic
     score: float
+    capacity_score: float = 0.0
+    site_score: float = 0.0
+    time_score: float = 0.0
+    total_score: float = 0.0
     reasons: list[str]
     available: bool
 

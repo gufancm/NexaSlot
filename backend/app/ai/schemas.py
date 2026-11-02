@@ -118,6 +118,10 @@ class BookingSuggestion(BaseModel):
     location: str
     timezone: str
     score: float
+    capacity_score: float = 0.0
+    site_score: float = 0.0
+    time_score: float = 0.0
+    total_score: float = 0.0
     reason: str
 
 

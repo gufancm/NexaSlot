@@ -245,6 +245,22 @@ export type BookingSuggestion = {
      */
     score: number;
     /**
+     * Capacity Score
+     */
+    capacity_score?: number;
+    /**
+     * Site Score
+     */
+    site_score?: number;
+    /**
+     * Time Score
+     */
+    time_score?: number;
+    /**
+     * Total Score
+     */
+    total_score?: number;
+    /**
      * Reason
      */
     reason: string;
@@ -885,6 +901,22 @@ export type ResourceMatchCandidate = {
      * Score
      */
     score: number;
+    /**
+     * Capacity Score
+     */
+    capacity_score?: number;
+    /**
+     * Site Score
+     */
+    site_score?: number;
+    /**
+     * Time Score
+     */
+    time_score?: number;
+    /**
+     * Total Score
+     */
+    total_score?: number;
     /**
      * Reasons
      */

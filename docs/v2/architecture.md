@@ -47,19 +47,25 @@ V2 新增四张表，并在 `resource_slots` 上增加一个占用指针：
 所有写路径统一采用以下顺序，避免交叉死锁：
 
 ```text
-resource 行（SELECT ... FOR UPDATE）
+resource 行（预约/候补 FOR SHARE；管理变更 FOR UPDATE）
   -> resource_slots 按 start_at 升序（SELECT ... FOR UPDATE）
-  -> booking_holds / waitlist_entries 行
+  -> booking_holds / waitlist_entries 行（SELECT ... FOR UPDATE）
   -> 写 reservations / reservation_slots / outbox_events
 ```
 
+- **普通预约与候补**只对 `resource` 使用共享锁：同一资源不同时间段的请求可以并行，只有真正重叠的时间片才会在排他锁上串行。
+- **资源下架、开放规则、黑名单等管理操作**使用排他锁；它们会等待在途预约提交，反向也会阻止新预约越过下架操作。
+- 所有锁定读在拿到锁后使用 `populate_existing` 强制刷新 Session 身份映射。否则并发事务可能在等待锁前读到旧 HOLD/订单状态，拿到锁后仍复用旧对象，造成重复状态迁移。
+- 多时间片一律按 `start_at` 升序加锁；任何路径都不能先锁 Slot 再锁 Resource。
+
 | 场景 | 事务边界 | 关键动作 |
 | --- | --- | --- |
-| 创建预约 | 单事务 | 锁资源 → 锁时间片 → 校验空闲 → 写订单/关联/Outbox → 提交换缓存版本 |
-| 取消预约 | 单事务 | 锁资源 → 锁时间片 → 释放指针 → **同事务**为下一位候补创建 HOLD |
+| 创建预约 | 单事务 | 共享锁定资源 → 排他锁定时间片 → 校验空闲 → 写订单/关联/Outbox → 提交 |
+| 取消预约 | 单事务 | 共享锁定资源 → 排他锁定时间片 → 释放指针 → **同事务**为下一位候补创建 HOLD |
 | 加入候补 | 单事务 | 锁资源/时间片 → 校验确实不可用 → 写候补 + Outbox |
 | 确认 OFFER | 单事务 | 锁资源/时间片/HOLD → 校验未过期 → 写订单 → HOLD 置 CONSUMED |
 | 拒绝/过期 | 单事务 | 锁资源/时间片/HOLD → 释放 → 同事务递补下一位 |
+| 资源下架/规则变更 | 单事务 | `FOR UPDATE` 锁定资源 → 校验未来订单 → 修改并写缓存失效 Outbox |
 
 **为什么释放时要同事务递补**：如果先提交“释放”，再异步创建 HOLD，新来的 HTTP 预约可能在这个窗口抢走时间片。V2 在取消事务内直接创建下一位 HOLD，保证队列优先。
 
@@ -88,14 +94,19 @@ stateDiagram-v2
 
 ```text
 读：GET cache -> 命中返回
-             -> 未命中：抢 single-flight 锁 -> 查 MySQL -> SET TTL
-写：MySQL 事务提交 -> INCR 资源版本号 -> 旧缓存自然过期
+             -> 未命中：抢 single-flight 锁
+             -> 等待 50 / 100 / 200ms 并复查缓存
+             -> 第二层重建锁 -> 查 MySQL -> SET TTL（带抖动）
+写：MySQL 事务写 cache.invalidate Outbox -> COMMIT
+    -> Worker INCR 资源版本号 -> 新版本键生效，旧键按 TTL 淘汰
 ```
 
 - **版本化失效**：每次写入只 `INCR nexaslot:ver:resource:{id}`，缓存键包含版本号。无需枚举删除所有日期键，也避免删除与并发回填的竞态。
-- **single-flight**：同一资源/日期重建只允许一个请求回源，其余等待 50ms 后重试缓存；仍未命中才回源，避免击穿。
-- **降级**：Redis 连接失败时 `cache_*` 返回 `None/False`，请求回退 MySQL；写事务不受影响。
-- **TTL**：可用性 60 秒、资源详情 300 秒；版本号变化后旧键不再被读取。
+- **有界等待 + 双层 single-flight**：等待方先按 50/100/200ms 复查缓存；仍未命中才尝试 fallback 重建锁。避免单次 50ms 后全部回源 MySQL。
+- **TTL 抖动**：可用性 60 + 0～15 秒、资源详情 300 + 0～60 秒，避免大量键同一时刻集中失效。
+- **可靠失效**：业务事务内写 `cache.invalidate` 事件；Worker 严格递增资源版本号，Redis 失败时保留事件并指数退避重试。普通写路径仍采用非严格模式，缓存故障不阻断预约。
+- **降级**：Redis 连接失败时 `cache_*` 返回 `None/False`，请求回退 MySQL；MySQL 仍是唯一权威。
+- **TTL**：即使版本号短暂更新失败，旧缓存也会在最长 75 秒 / 360 秒后自然过期。
 - **命中统计**：`nexaslot:stats:cache:hit/miss`，通过 `/operations/metrics` 暴露。
 
 ## 6. 分布式限流
@@ -114,16 +125,18 @@ sequenceDiagram
     participant Worker
     API->>DB: BEGIN
     API->>DB: 写 reservations / reservation_slots
-    API->>DB: 写 outbox_events(PENDING)
+    API->>DB: 写通知事件 / cache.invalidate(PENDING)
     API->>DB: COMMIT
     Worker->>DB: SELECT ... FOR UPDATE SKIP LOCKED
     Worker->>DB: 更新 status=PROCESSING, locked_until
     Worker->>DB: 写 notifications（唯一 event_id+user_id）
-    Worker->>DB: status=PROCESSED
+    Worker->>Redis: cache.invalidate -> INCR 资源版本号
+    Worker->>DB: status=DONE
 ```
 
 - 事件与业务写入同事务，避免“订单成功但通知丢失”。
 - 领取使用 `SKIP LOCKED` + 租约，多个 Worker 可并行且不会重复占用同一事件。
+- 租约过期事件会被重新领取；Worker 崩溃后无需人工介入即可恢复。
 - 失败指数退避，超过 `OUTBOX_MAX_ATTEMPTS` 转 `FAILED`，可经运维接口手动重试。
 - 通知写入依赖唯一键，重放安全；语义是**至少一次**。
 

@@ -9,12 +9,12 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-最近一次结果（2026-10-28）：
+最近一次全量结果（2026-11-02）：
 
 ```text
-74 passed, 90 warnings in 20.96s
+162 passed, 126 warnings in 28.79s
 All checks passed!
-71 files already formatted
+91 files already formatted
 ```
 
 ### 测试分布
@@ -24,12 +24,20 @@ All checks passed!
 | `tests/api/routes/test_users.py` | 27 | 用户、权限、资料、密码（V1） |
 | `tests/crud/test_user.py` | 10 | 用户 CRUD（V1） |
 | `tests/api/routes/test_login.py` | 9 | 登录、Token、重置密码（V1） |
-| `tests/api/routes/test_reservations.py` | 6 | 预约冲突、幂等、取消释放、跨租户（V1） |
+| `tests/api/routes/test_reservations.py` | 8 | 预约冲突、幂等回滚、取消释放、跨租户（V1） |
 | `tests/api/routes/test_organizations.py` | 5 | 组织、成员、RBAC（V1） |
-| `tests/api/routes/test_scheduling.py` | 5 | 硬约束、稳定排序、冲突过滤、替代推荐、缓存失效 |
+| `tests/api/routes/test_scheduling.py` | 5 | 硬约束、可解释评分、稳定排序、冲突过滤、替代推荐 |
 | `tests/api/routes/test_waitlist.py` | 5 | FIFO、确认、重复确认、拒绝递补、过期递补、跨租户、通知已读、Outbox 去重 |
 | `tests/api/routes/test_sites_resources.py` | 3 | 场地、资源、开放规则（V1） |
+| `tests/api/routes/test_ai.py` | 10 | AI 解析、推荐、确认与降级 |
 | `tests/test_v2_infrastructure.py` | 3 | Token Bucket、Redis 降级、Outbox 幂等 |
+| `tests/test_concurrency.py` | 5 | 共享锁并行、重叠冲突、下架竞争、HOLD 确认/过期竞争、双 Worker 幂等 |
+| `tests/test_outbox_reliability.py` | 5 | 租约恢复、多 Worker 领取、缓存失效、退避与最大重试 |
+| `tests/test_cache_helper.py` | 6 | 缓存命中、single-flight、有界等待、TTL 抖动、严格失效 |
+| `tests/test_db_retry.py` | 4 | MySQL 1213/1205 有界重试与业务异常不重试 |
+| `tests/test_matching_scoring.py` | 2 | 容量评分与中性评分解释 |
+| `tests/test_ai_parser.py` | 41 | 中文意图解析基线 |
+| `tests/test_ai_validation.py` | 13 | LLM 结构化输出校验与信任边界 |
 | `tests/api/routes/test_private.py` | 1 | 开发态私有路由（V1） |
 
 > 测试连接 `.env` 中的 MySQL。`conftest.py` 会创建超级管理员与测试用户；请勿把测试指向生产库。

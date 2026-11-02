@@ -20,6 +20,9 @@ from app.models import (
     HoldStatus,
     Resource,
     ResourceSlot,
+    ResourceStatus,
+    Site,
+    SiteStatus,
     SlotStatus,
     WaitlistEntry,
     WaitlistStatus,
@@ -28,13 +31,46 @@ from app.schemas import ErrorCode
 from app.services.outbox import enqueue, notification_payload
 
 
-def lock_resource(db: Session, resource_id: uuid.UUID) -> Resource:
+def lock_resource(
+    db: Session, resource_id: uuid.UUID, *, exclusive: bool = False
+) -> Resource:
+    """Lock a resource row in share mode unless the caller is mutating it."""
     resource = db.exec(
-        select(Resource).where(Resource.id == resource_id).with_for_update()
+        select(Resource)
+        .where(Resource.id == resource_id)
+        .with_for_update(read=not exclusive)
+        .execution_options(populate_existing=True)
     ).first()
     if resource is None:
         raise api_error(404, ErrorCode.RESOURCE_NOT_FOUND, "Resource not found")
     return resource
+
+
+def lock_active_resource(db: Session, resource_id: uuid.UUID) -> tuple[Resource, Site]:
+    """Share-lock an active resource and its site for a booking-style write."""
+    resource = lock_resource(db, resource_id)
+    if resource.status != ResourceStatus.ACTIVE.value:
+        raise api_error(
+            400, ErrorCode.RESOURCE_INACTIVE, "Resource is not open for booking"
+        )
+    site = db.exec(
+        select(Site)
+        .where(Site.id == resource.site_id)
+        .with_for_update(read=True)
+        .execution_options(populate_existing=True)
+    ).first()
+    if site is None:
+        raise api_error(404, ErrorCode.RESOURCE_NOT_FOUND, "Resource site not found")
+    if site.status != SiteStatus.ACTIVE.value:
+        raise api_error(
+            400, ErrorCode.INVALID_REQUEST, "This site is not open for booking"
+        )
+    return resource, site
+
+
+def lock_resource_exclusive(db: Session, resource_id: uuid.UUID) -> Resource:
+    """Exclusive lock for admin changes such as resource/status/rule updates."""
+    return lock_resource(db, resource_id, exclusive=True)
 
 
 def release_hold(db: Session, hold: BookingHold, status: HoldStatus) -> int:
@@ -88,6 +124,7 @@ def allocate_next_hold(
             )
             .order_by(ResourceSlot.start_at)
             .with_for_update()
+            .execution_options(populate_existing=True)
         ).all()
     )
     expected = int(

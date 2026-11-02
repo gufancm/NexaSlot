@@ -32,7 +32,9 @@ from app.models import (
     ReservationStatus,
     Resource,
     ResourceSlot,
+    ResourceStatus,
     Site,
+    SiteStatus,
     SlotStatus,
     User,
     WaitlistEntry,
@@ -45,10 +47,20 @@ from app.schemas import (
     WaitlistCreate,
     WaitlistEntryPublic,
 )
-from app.services.allocation import allocate_next_hold, lock_resource, release_hold
+from app.services.allocation import (
+    allocate_next_hold,
+    lock_active_resource,
+    lock_resource,
+    release_hold,
+)
 from app.services.audit import record_audit
+from app.services.db_retry import retry_on_deadlock
 from app.services.orgs import require_org_access
-from app.services.outbox import enqueue, notification_payload
+from app.services.outbox import (
+    enqueue,
+    enqueue_cache_invalidation,
+    notification_payload,
+)
 from app.services.reservations import _reservation_public, validate_booking_rules
 from app.services.slots import ensure_range_slots
 
@@ -68,18 +80,34 @@ def _lock_slots_for_window(
             )
             .order_by(ResourceSlot.start_at)
             .with_for_update()
+            .execution_options(populate_existing=True)
         ).all()
     )
 
 
 def _lock_hold_in_order(
-    db: Session, hold: BookingHold
+    db: Session, hold: BookingHold, *, require_active: bool = False
 ) -> tuple[Resource, list[ResourceSlot], BookingHold]:
     """Lock resource -> slots -> hold, matching every other write path."""
     resource = lock_resource(db, hold.resource_id)
+    if require_active:
+        if resource.status != ResourceStatus.ACTIVE.value:
+            raise api_error(
+                409, ErrorCode.RESOURCE_INACTIVE, "Resource is no longer bookable"
+            )
+        site = db.exec(
+            select(Site).where(Site.id == resource.site_id).with_for_update(read=True)
+        ).first()
+        if site is None or site.status != SiteStatus.ACTIVE.value:
+            raise api_error(
+                409, ErrorCode.INVALID_REQUEST, "This site is no longer bookable"
+            )
     slots = _lock_slots_for_window(db, hold.resource_id, hold.start_at, hold.end_at)
     locked = db.exec(
-        select(BookingHold).where(BookingHold.id == hold.id).with_for_update()
+        select(BookingHold)
+        .where(BookingHold.id == hold.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     ).first()
     if locked is None:
         raise api_error(404, ErrorCode.HOLD_NOT_FOUND, "Offer not found")
@@ -166,6 +194,7 @@ def entry_public(db: Session, entry: WaitlistEntry) -> WaitlistEntryPublic:
     )
 
 
+@retry_on_deadlock()
 def join_waitlist(
     *,
     user: User,
@@ -207,7 +236,8 @@ def join_waitlist(
                     True,
                 )
 
-            resource = lock_resource(db, resource.id)
+            resource, locked_site = lock_active_resource(db, resource.id)
+            validate_booking_rules(locked_site, start_utc, end_utc)
             slots = list(
                 db.exec(
                     select(ResourceSlot)
@@ -267,7 +297,7 @@ def join_waitlist(
                 )
 
             entry = WaitlistEntry(
-                organization_id=site.organization_id,
+                organization_id=locked_site.organization_id,
                 user_id=user.id,
                 resource_id=resource.id,
                 start_at=to_db(start_utc),
@@ -280,7 +310,7 @@ def join_waitlist(
             record_audit(
                 db,
                 actor_id=user.id,
-                organization_id=site.organization_id,
+                organization_id=locked_site.organization_id,
                 action="waitlist.join",
                 target_type="waitlist",
                 target_id=entry.id,
@@ -296,7 +326,7 @@ def join_waitlist(
                 aggregate_id=entry.id,
                 payload=notification_payload(
                     user_id=user.id,
-                    organization_id=site.organization_id,
+                    organization_id=locked_site.organization_id,
                     title="已加入候补",
                     message=(
                         f"{resource.name} {start_utc.isoformat()} 的候补已登记，"
@@ -304,6 +334,9 @@ def join_waitlist(
                     ),
                     waitlist_id=str(entry.id),
                 ),
+            )
+            enqueue_cache_invalidation(
+                db, resource_id=resource.id, reason="waitlist.join"
             )
 
             public = entry_public(db, entry)
@@ -327,6 +360,7 @@ def join_waitlist(
         ) from exc
 
 
+@retry_on_deadlock()
 def leave_waitlist(*, user: User, entry_id: uuid.UUID) -> WaitlistEntryPublic:
     entry: WaitlistEntry | None = None
     released = False
@@ -354,7 +388,10 @@ def leave_waitlist(*, user: User, entry_id: uuid.UUID) -> WaitlistEntryPublic:
             db, snapshot.resource_id, snapshot.start_at, snapshot.end_at
         )
         entry = db.exec(
-            select(WaitlistEntry).where(WaitlistEntry.id == entry_id).with_for_update()
+            select(WaitlistEntry)
+            .where(WaitlistEntry.id == entry_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
         ).first()
         if entry is None:
             raise api_error(
@@ -388,6 +425,9 @@ def leave_waitlist(*, user: User, entry_id: uuid.UUID) -> WaitlistEntryPublic:
                 resource=resource,
                 start_at=from_db(entry.start_at) or utcnow(),
                 end_at=from_db(entry.end_at) or utcnow(),
+            )
+            enqueue_cache_invalidation(
+                db, resource_id=resource.id, reason="waitlist.leave"
             )
         db.commit()
         public = entry_public(db, entry)
@@ -426,9 +466,11 @@ def _mark_expired_in_tx(
         start_at=from_db(hold.start_at) or utcnow(),
         end_at=from_db(hold.end_at) or utcnow(),
     )
+    enqueue_cache_invalidation(db, resource_id=resource.id, reason="waitlist.expire")
     return entry, resource
 
 
+@retry_on_deadlock()
 def confirm_offer(*, user: User, hold_id: uuid.UUID) -> ReservationPublic:
     resource_id: uuid.UUID | None = None
     with Session(engine) as db:
@@ -441,7 +483,7 @@ def confirm_offer(*, user: User, hold_id: uuid.UUID) -> ReservationPublic:
             )
         resource_id = snapshot.resource_id
 
-        resource, slots, hold = _lock_hold_in_order(db, snapshot)
+        resource, slots, hold = _lock_hold_in_order(db, snapshot, require_active=True)
 
         if hold.status == HoldStatus.CONSUMED.value and hold.reservation_id:
             reservation = db.get(Reservation, hold.reservation_id)
@@ -537,12 +579,16 @@ def confirm_offer(*, user: User, hold_id: uuid.UUID) -> ReservationPublic:
                 reservation_id=str(reservation.id),
             ),
         )
+        enqueue_cache_invalidation(
+            db, resource_id=hold.resource_id, reason="waitlist.confirm"
+        )
         db.commit()
         public = _reservation_public(db, reservation)
     invalidate_resource(resource_id or hold_id)
     return public
 
 
+@retry_on_deadlock()
 def decline_offer(*, user: User, hold_id: uuid.UUID) -> WaitlistEntryPublic:
     entry: WaitlistEntry | None = None
     resource_id: uuid.UUID | None = None
@@ -586,6 +632,9 @@ def decline_offer(*, user: User, hold_id: uuid.UUID) -> WaitlistEntryPublic:
             start_at=from_db(hold.start_at) or utcnow(),
             end_at=from_db(hold.end_at) or utcnow(),
         )
+        enqueue_cache_invalidation(
+            db, resource_id=resource.id, reason="waitlist.decline"
+        )
         db.commit()
         if entry is None:
             raise api_error(
@@ -617,6 +666,7 @@ def expire_due_holds(limit: int = 20) -> int:
     return expired
 
 
+@retry_on_deadlock()
 def _expire_one(hold_id: uuid.UUID) -> bool:
     resource_id: uuid.UUID | None = None
     with Session(engine) as db:

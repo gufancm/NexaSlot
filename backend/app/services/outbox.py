@@ -9,12 +9,15 @@ from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.cache.availability import invalidate_resource
 from app.core.config import settings
 from app.core.db import engine
 from app.core.time import db_now
 from app.models import Notification, OutboxEvent, OutboxStatus
 
 logger = logging.getLogger(__name__)
+
+CACHE_INVALIDATION_EVENT = "cache.invalidate"
 
 
 def enqueue(
@@ -53,29 +56,60 @@ def notification_payload(
     }
 
 
+def enqueue_cache_invalidation(
+    db: Session, *, resource_id: str | uuid.UUID, reason: str
+) -> OutboxEvent:
+    """Register a reliable cache invalidation in the caller's transaction."""
+    return enqueue(
+        db,
+        event_type=CACHE_INVALIDATION_EVENT,
+        aggregate_id=resource_id,
+        payload={"resource_id": str(resource_id), "reason": reason},
+    )
+
+
 def claim_events(limit: int | None = None) -> list[uuid.UUID]:
     """Lease a batch of due events with SKIP LOCKED for multi-worker safety."""
     batch = limit or settings.OUTBOX_BATCH_SIZE
     now = db_now()
     lease_until = now + timedelta(seconds=settings.OUTBOX_LEASE_SECONDS)
-    with Session(engine) as db:
-        rows = db.exec(
-            select(OutboxEvent)
-            .where(
-                or_(
-                    OutboxEvent.status == OutboxStatus.PENDING.value,
-                    and_(
-                        OutboxEvent.status == OutboxStatus.PROCESSING.value,
-                        OutboxEvent.locked_until < now,
-                    ),
-                ),
-                OutboxEvent.available_at <= now,
-                or_(
-                    OutboxEvent.locked_until.is_(None),
+
+    def due_conditions():
+        return (
+            or_(
+                OutboxEvent.status == OutboxStatus.PENDING.value,
+                and_(
+                    OutboxEvent.status == OutboxStatus.PROCESSING.value,
                     OutboxEvent.locked_until < now,
                 ),
-            )
-            .order_by(OutboxEvent.created_at, OutboxEvent.id)
+            ),
+            OutboxEvent.available_at <= now,
+            or_(
+                OutboxEvent.locked_until.is_(None),
+                OutboxEvent.locked_until < now,
+            ),
+        )
+
+    with Session(engine) as db:
+        # Pick candidates without locking. Ordering by created_at cannot use an
+        # index, and MySQL locks the whole sorted set for FOR UPDATE ... LIMIT,
+        # which starves other workers. Claim by primary key instead: both
+        # workers walk the same order, so SKIP LOCKED gives each a distinct row.
+        candidate_ids = list(
+            db.exec(
+                select(OutboxEvent.id)
+                .where(*due_conditions())
+                .order_by(OutboxEvent.created_at, OutboxEvent.id)
+                .limit(max(batch * 4, batch + 8))
+            ).all()
+        )
+        if not candidate_ids:
+            return []
+
+        rows = db.exec(
+            select(OutboxEvent)
+            .where(OutboxEvent.id.in_(candidate_ids), *due_conditions())
+            .order_by(OutboxEvent.id)
             .limit(batch)
             .with_for_update(skip_locked=True)
         ).all()
@@ -125,13 +159,25 @@ def _handle_notification(db: Session, event: OutboxEvent) -> None:
         db.rollback()
 
 
+def _handle_cache_invalidation(event: OutboxEvent) -> None:
+    payload = event.payload or {}
+    raw = payload.get("resource_id")
+    if not raw:
+        raise ValueError("cache invalidation event is missing resource_id")
+    if not invalidate_resource(uuid.UUID(str(raw)), strict=True):
+        raise RuntimeError("cache invalidation failed")
+
+
 def process_event(event_id: uuid.UUID) -> bool:
     with Session(engine) as db:
         event = db.get(OutboxEvent, event_id)
         if event is None or event.status != OutboxStatus.PROCESSING.value:
             return False
         try:
-            _handle_notification(db, event)
+            if event.event_type == CACHE_INVALIDATION_EVENT:
+                _handle_cache_invalidation(event)
+            else:
+                _handle_notification(db, event)
         except Exception as exc:  # noqa: BLE001 - persisted for retry/debugging
             logger.exception("outbox event %s failed", event_id)
             db.rollback()

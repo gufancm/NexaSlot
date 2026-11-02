@@ -477,6 +477,10 @@ def _search_suggestions(
                     location=location,
                     timezone=prepared.timezone,
                     score=candidate.score,
+                    capacity_score=candidate.capacity_score,
+                    site_score=candidate.site_score,
+                    time_score=candidate.time_score,
+                    total_score=candidate.total_score,
                     reason="；".join(reasons),
                 )
             )

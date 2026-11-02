@@ -78,6 +78,22 @@ function errorStatus(error: unknown): number | undefined {
   return undefined
 }
 
+function errorCode(error: unknown): string | undefined {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const detail = (error as { response?: { data?: { detail?: unknown } } })
+      .response?.data?.detail
+    if (
+      detail &&
+      typeof detail === "object" &&
+      "code" in detail &&
+      typeof detail.code === "string"
+    ) {
+      return detail.code
+    }
+  }
+  return undefined
+}
+
 export function SmartBookingDialog() {
   const { currentOrgId } = useOrg()
   const { showSuccessToast, showErrorToast } = useCustomToast()
@@ -151,7 +167,6 @@ export function SmartBookingDialog() {
     onSuccess: (data) => {
       setResult(data)
       setConfirmed(null)
-      setConflict(false)
       syncOverrides(data.interpreted)
       const first = data.suggestions?.[0] ?? null
       setSelected(first)
@@ -185,13 +200,40 @@ export function SmartBookingDialog() {
       await queryClient.invalidateQueries({ queryKey: ["availability"] })
     },
     onError: (error) => {
+      const code = errorCode(error)
+      if (errorStatus(error) === 409 && code === "SLOT_UNAVAILABLE") {
+        setConflict(true)
+        setConfirmed(null)
+        setSelected(null)
+        showErrorToast("该时段已被其他人占用，正在重新查询替代方案")
+        recommendMutation.mutate(buildOverrides())
+        return
+      }
+      if (errorStatus(error) === 409 && code === "IDEMPOTENCY_CONFLICT") {
+        setConflict(false)
+        showErrorToast("请求参数与原幂等键不匹配，请重新选择资源或时段后再试")
+        return
+      }
       if (errorStatus(error) === 409) {
         setConflict(true)
-        showErrorToast("该时段刚刚被占用，请重新推荐或选择其他方案")
+        showErrorToast("预约请求发生冲突，请重新选择候选方案")
         return
       }
       handleError.call(showErrorToast, error as Error)
     },
+  })
+
+  const buildOverrides = (): BookingOverrides => ({
+    date: overrideDate || null,
+    time_window_start: overrideStart ? `${overrideStart}:00` : null,
+    time_window_end: overrideEnd ? `${overrideEnd}:00` : null,
+    duration_minutes: overrideDuration ? Number(overrideDuration) : null,
+    party_size: overrideParty ? Number(overrideParty) : null,
+    required_equipment: overrideEquipment
+      .split(/[，,、\s]+/)
+      .map((item) => item.trim())
+      .filter(Boolean),
+    preferred_floor: overrideFloor ? Number(overrideFloor) : null,
   })
 
   const submit = (withOverrides: boolean) => {
@@ -204,19 +246,7 @@ export function SmartBookingDialog() {
       recommendMutation.mutate(undefined)
       return
     }
-    const overrides: BookingOverrides = {
-      date: overrideDate || null,
-      time_window_start: overrideStart ? `${overrideStart}:00` : null,
-      time_window_end: overrideEnd ? `${overrideEnd}:00` : null,
-      duration_minutes: overrideDuration ? Number(overrideDuration) : null,
-      party_size: overrideParty ? Number(overrideParty) : null,
-      required_equipment: overrideEquipment
-        .split(/[，,、\s]+/)
-        .map((item) => item.trim())
-        .filter(Boolean),
-      preferred_floor: overrideFloor ? Number(overrideFloor) : null,
-    }
-    recommendMutation.mutate(overrides)
+    recommendMutation.mutate(buildOverrides())
   }
 
   const interpreted = result?.interpreted
@@ -558,7 +588,7 @@ export function SmartBookingDialog() {
 
               {conflict ? (
                 <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                  该时段已被其他人占用。请点击“分析并推荐”重新查询，或选择其他候选时段。
+                  该时段已被其他人占用。已为你重新查询可用方案，请重新选择后确认；也可以修改条件再次推荐。
                 </div>
               ) : null}
             </div>

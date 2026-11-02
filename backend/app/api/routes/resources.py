@@ -1,5 +1,4 @@
 import json
-import time
 import uuid
 from datetime import date, timedelta
 from typing import Annotated
@@ -15,13 +14,13 @@ from app.cache.availability import (
     get_resource,
     invalidate_resource,
     lock_key,
+    read_cached_or_build,
     resource_key,
     set_availability,
     set_resource,
 )
 from app.core.config import settings
 from app.core.errors import api_error
-from app.core.redis_sync import acquire_lock, cache_delete
 from app.core.time import from_db, get_timezone, local_now, to_db, utcnow
 from app.models import (
     OpeningRule,
@@ -47,9 +46,11 @@ from app.schemas import (
     ResourcesPublic,
     ResourceUpdate,
 )
+from app.services.allocation import lock_resource_exclusive
 from app.services.audit import record_audit
 from app.services.catalog import resource_public, resource_public_list
 from app.services.orgs import OrgAccess, ResourceAccess, ensure_publishable_site
+from app.services.outbox import enqueue_cache_invalidation
 from app.services.slots import build_availability
 
 router = APIRouter(tags=["resources"])
@@ -175,28 +176,24 @@ def read_resource(
     access: Annotated[ResourceAccess, Depends(require_resource())],
 ) -> ResourcePublic:
     key = resource_key(access.org.organization.id, access.resource.id)
-    cached = get_resource(key)
-    if cached is not None:
-        return ResourcePublic.model_validate(cached)
-
-    lock = lock_key(
-        "resource", access.org.organization.id, access.resource.id, "detail"
+    value = read_cached_or_build(
+        key=key,
+        get_cached=get_resource,
+        set_cached=set_resource,
+        lock=lock_key(
+            "resource", access.org.organization.id, access.resource.id, "detail"
+        ),
+        fallback_lock=lock_key(
+            "resource",
+            access.org.organization.id,
+            access.resource.id,
+            "detail-fallback",
+        ),
+        build=lambda: resource_public(session, access.resource, access.site).model_dump(
+            mode="json"
+        ),
     )
-    if acquire_lock(lock, ttl_seconds=5):
-        try:
-            public = resource_public(session, access.resource, access.site)
-            set_resource(key, public.model_dump(mode="json"))
-            return public
-        finally:
-            cache_delete(lock)
-
-    # Another request is rebuilding this key. Give it a brief chance before
-    # falling back to MySQL instead of sending every waiter to the database.
-    time.sleep(0.05)
-    cached = get_resource(key)
-    if cached is not None:
-        return ResourcePublic.model_validate(cached)
-    return resource_public(session, access.resource, access.site)
+    return ResourcePublic.model_validate(value)
 
 
 @router.patch("/resources/{resource_id}", response_model=ResourcePublic)
@@ -207,8 +204,8 @@ def update_resource(
     current_user: CurrentUser,
     payload: ResourceUpdate,
 ) -> ResourcePublic:
-    resource = access.resource
     data = payload.model_dump(exclude_unset=True)
+    resource = lock_resource_exclusive(session, access.resource.id)
 
     if "site_id" in data and data["site_id"] != resource.site_id:
         site = _site_in_org(session, access.org.organization.id, data["site_id"])
@@ -245,6 +242,9 @@ def update_resource(
         target_type="resource",
         target_id=resource.id,
         detail={key: str(value) for key, value in data.items()},
+    )
+    enqueue_cache_invalidation(
+        session, resource_id=resource.id, reason="resource.update"
     )
     session.commit()
     session.refresh(resource)
@@ -290,6 +290,7 @@ def replace_opening_rules(
 ) -> OpeningRulesPublic:
     _validate_rules(payload)
     resource_id = access.resource.id
+    lock_resource_exclusive(session, resource_id)
 
     existing = session.exec(
         select(OpeningRule).where(OpeningRule.resource_id == resource_id)
@@ -317,6 +318,9 @@ def replace_opening_rules(
         target_type="resource",
         target_id=resource_id,
         detail={"rule_count": len(created)},
+    )
+    enqueue_cache_invalidation(
+        session, resource_id=resource_id, reason="opening_rules.update"
     )
     session.commit()
     invalidate_resource(resource_id)
@@ -371,6 +375,7 @@ def create_blackout(
     current_user: CurrentUser,
     payload: BlackoutCreate,
 ) -> BlackoutPublic:
+    lock_resource_exclusive(session, access.resource.id)
     start_db = to_db(payload.start_at)
     end_db = to_db(payload.end_at)
     conflicting = int(
@@ -420,6 +425,9 @@ def create_blackout(
         target_id=access.resource.id,
         detail={"start_at": start_db.isoformat(), "end_at": end_db.isoformat()},
     )
+    enqueue_cache_invalidation(
+        session, resource_id=access.resource.id, reason="blackout.create"
+    )
     session.commit()
     session.refresh(blackout)
     invalidate_resource(access.resource.id)
@@ -451,23 +459,24 @@ def read_availability(
         )
 
     key = availability_key(access.org.organization.id, access.resource.id, day)
-    cached = get_availability(key)
-    if cached is not None:
-        return AvailabilityPublic.model_validate(cached)
-
-    lock = lock_key(
-        "availability", access.org.organization.id, access.resource.id, day.isoformat()
+    value = read_cached_or_build(
+        key=key,
+        get_cached=get_availability,
+        set_cached=set_availability,
+        lock=lock_key(
+            "availability",
+            access.org.organization.id,
+            access.resource.id,
+            day.isoformat(),
+        ),
+        fallback_lock=lock_key(
+            "availability",
+            access.org.organization.id,
+            access.resource.id,
+            f"{day.isoformat()}-fallback",
+        ),
+        build=lambda: build_availability(
+            session, access.resource, access.site, day
+        ).model_dump(mode="json"),
     )
-    if acquire_lock(lock, ttl_seconds=5):
-        try:
-            public = build_availability(session, access.resource, access.site, day)
-            set_availability(key, public.model_dump(mode="json"))
-            return public
-        finally:
-            cache_delete(lock)
-
-    time.sleep(0.05)
-    cached = get_availability(key)
-    if cached is not None:
-        return AvailabilityPublic.model_validate(cached)
-    return build_availability(session, access.resource, access.site, day)
+    return AvailabilityPublic.model_validate(value)

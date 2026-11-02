@@ -90,7 +90,9 @@ def update_site(
     site_id: uuid.UUID,
     payload: SiteUpdate,
 ) -> SitePublic:
-    site = session.get(Site, site_id)
+    site = session.exec(
+        select(Site).where(Site.id == site_id).with_for_update()
+    ).first()
     if site is None or site.organization_id != org.organization.id:
         raise api_error(404, ErrorCode.NOT_FOUND, "Site not found")
 

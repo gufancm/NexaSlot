@@ -67,7 +67,7 @@ def _score(
     window_requested: bool,
     start: datetime | None,
     site: Site,
-) -> tuple[float, list[str]]:
+) -> tuple[float, list[str], dict[str, float]]:
     capacity_fit = 1.0 - min(
         1.0, max(0.0, (resource.capacity - party_size) / max(resource.capacity, 1))
     )
@@ -77,11 +77,12 @@ def _score(
         site_fit = 1.0 if resource.site_id == preferred_site_id else 0.0
     window_fit = 1.0 if window_requested else 0.5
 
-    score = (
+    total = (
         settings.MATCH_WEIGHT_CAPACITY * capacity_fit
         + settings.MATCH_WEIGHT_SITE * site_fit
         + settings.MATCH_WEIGHT_WINDOW * window_fit
-    ) * 100
+    )
+    score = total * 100
 
     reasons = [f"容量 {resource.capacity} 人，满足 {party_size} 人需求"]
     if preferred_site_id is not None and resource.site_id == preferred_site_id:
@@ -90,7 +91,16 @@ def _score(
         reasons.append("所选时段完全空闲")
     else:
         reasons.append("未指定时间，仅按条件推荐")
-    return round(score, 2), reasons
+    return (
+        round(score, 2),
+        reasons,
+        {
+            "capacity_score": round(capacity_fit, 4),
+            "site_score": round(site_fit, 4),
+            "time_score": round(window_fit, 4),
+            "total_score": round(total, 4),
+        },
+    )
 
 
 def match_resources(
@@ -135,7 +145,7 @@ def match_resources(
         if window_requested and start and end:
             if not _window_is_free(session, resource, site, start, end):
                 continue
-        score, reasons = _score(
+        score, reasons, components = _score(
             resource=resource,
             party_size=request.party_size,
             preferred_site_id=request.preferred_site_id,
@@ -149,6 +159,7 @@ def match_resources(
             ResourceMatchCandidate(
                 resource=resource_public(session, resource, site),
                 score=score,
+                **components,
                 reasons=reasons,
                 available=True,
             )
@@ -217,6 +228,10 @@ def alternatives_for_resource(
                 ResourceMatchCandidate(
                     resource=resource_public(session, item, other_site),
                     score=round(similarity * 100, 2),
+                    capacity_score=round(similarity, 4),
+                    site_score=0.0,
+                    time_score=1.0,
+                    total_score=round(similarity, 4),
                     reasons=[
                         f"同一组织内可用，容量 {item.capacity} 人"
                         + (
